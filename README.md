@@ -23,19 +23,6 @@ It uses:
 - `marker_frame_prefix` (`string`, default `aruco_marker_`): child frame prefix.
 - `width`/`height`/`fps`: RealSense color stream settings.
 - `publish_rate_hz`: detection loop rate.
-- `publish_debug_image` (`bool`, default `true`): publish annotated detection image on a ROS topic.
-- `debug_image_topic` (`string`, default `/aruco/debug_image`): debug image topic name.
-- `show_debug_window` (`bool`, default `false`): show OpenCV window with overlays (for local GUI debugging).
-
-
-### Debug visualization
-
-You can inspect detections in two ways:
-
-- ROS image topic (recommended):
-  - enable `publish_debug_image:=true` and view `/aruco/debug_image` in RViz2 or `rqt_image_view`.
-- Local OpenCV window:
-  - set `show_debug_window:=true` to pop up a live annotated view.
 
 ### Example run
 
@@ -43,8 +30,7 @@ You can inspect detections in two ways:
 ros2 run <your_package_name> aruco_realsense_tf_node --ros-args \
   -p marker_id:=23 \
   -p marker_size:=0.04 \
-  -p aruco_dictionary:=DICT_6X6_250 \
-  -p publish_debug_image:=true
+  -p aruco_dictionary:=DICT_6X6_250
 ```
 
 > Tip: this script is currently provided as a standalone file in this repository.
