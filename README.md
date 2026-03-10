@@ -7,37 +7,43 @@ A ready-to-run ROS2 Python node is available at:
 
 - `Xarm_code/aruco_realsense_tf_node.py`
 
-It uses:
-- `pyrealsense2` for camera stream + intrinsics,
-- OpenCV ArUco for marker detection,
-- TF2 broadcaster for publishing marker pose transforms,
-- `PoseStamped` output compatible with `aruco_ros`-style easy_handeye2 workflows.
+This implementation now uses the **ROS2 RealSense driver topics** (not `pyrealsense2`) and is suitable as an `aruco_ros`-style replacement for easy_handeye2.
 
-### `aruco_ros` replacement behavior for easy_handeye2
+## Topic-based camera interface (RealSense ROS driver)
+
+Subscribe inputs:
+- `/camera/color/image_raw` (`sensor_msgs/msg/Image`)
+- `/camera/color/camera_info` (`sensor_msgs/msg/CameraInfo`)
+
+Publish outputs:
+- TF transforms for marker pose(s)
+- `/aruco_single/pose` (`geometry_msgs/msg/PoseStamped`, configurable)
+- `/aruco_single/result` (`sensor_msgs/msg/Image`, configurable)
+
+## `aruco_ros` replacement behavior for easy_handeye2
 
 When `marker_id` is set to a specific marker (e.g. `23`), the node publishes:
 
 - TF: `camera_frame -> single_marker_frame_id` (default `aruco_marker`)
-- Pose topic: `/aruco_single/pose` (configurable via `pose_topic`)
-- Debug image: `/aruco_single/result` (configurable via `debug_image_topic`)
+- Pose topic: `/aruco_single/pose`
+- Debug image: `/aruco_single/result`
 
-This mirrors the common `aruco_ros` + `easy_handeye2` usage pattern.
+This mirrors the common single-marker setup used by hand-eye calibration tools.
 
-### Key configurable ROS parameters
+## Key configurable ROS parameters
 
 - Marker setup
-  - `marker_id` (`int`, default `-1`): `-1` = all markers, non-negative = track single marker.
+  - `marker_id` (`int`, default `-1`): `-1` = all markers, non-negative = single marker.
   - `marker_size` (`double`, default `0.05`): marker side length in meters.
   - `aruco_dictionary` (`string`, default `DICT_4X4_50`): e.g. `DICT_6X6_250`.
 - Frames / topics
   - `camera_frame` (`string`, default `camera_color_optical_frame`)
-  - `marker_frame_prefix` (`string`, default `aruco_marker_`) for multi-marker mode.
-  - `single_marker_frame_id` (`string`, default `aruco_marker`) for single-marker mode.
+  - `marker_frame_prefix` (`string`, default `aruco_marker_`) for multi-marker mode
+  - `single_marker_frame_id` (`string`, default `aruco_marker`) for single-marker mode
+  - `color_image_topic` (`string`, default `/camera/color/image_raw`)
+  - `camera_info_topic` (`string`, default `/camera/color/camera_info`)
   - `pose_topic` (`string`, default `/aruco_single/pose`)
   - `debug_image_topic` (`string`, default `/aruco_single/result`)
-- Camera / timing
-  - `width`, `height`, `fps`
-  - `publish_rate_hz`
 - Debug
   - `publish_debug_image` (`bool`, default `true`)
   - `show_debug_window` (`bool`, default `false`)
@@ -48,15 +54,25 @@ This mirrors the common `aruco_ros` + `easy_handeye2` usage pattern.
   - `max_reprojection_error_px` (`double`, default `3.0`)
   - `pose_smoothing_alpha` (`double`, default `0.0`, range `[0.0, 1.0)`)
 
-### Why calibration accuracy is better now
+## Validation flow
 
-- Subpixel corner refinement improves corner localization.
-- PnP is solved with selectable methods (default `IPPE_SQUARE` is typically strong for planar square markers).
-- Levenberg-Marquardt refinement (`solvePnPRefineLM`) further improves pose.
-- Pose estimates can be filtered by reprojection error threshold.
-- Optional temporal smoothing reduces jitter in calibration capture.
+### 1) Start RealSense ROS2 driver
 
-### Example run (easy_handeye2-style single marker)
+```bash
+ros2 launch realsense2_camera rs_launch.py color_width:=1920 color_height:=1080 color_fps:=30
+```
+
+### 2) Confirm camera topics exist
+
+```bash
+ros2 topic list | grep camera
+```
+
+Expected includes:
+- `/camera/color/image_raw`
+- `/camera/color/camera_info`
+
+### 3) Run detector node
 
 ```bash
 ros2 run <your_package_name> aruco_realsense_tf_node --ros-args \
@@ -69,6 +85,28 @@ ros2 run <your_package_name> aruco_realsense_tf_node --ros-args \
   -p use_subpixel_refinement:=true \
   -p pnp_method:=IPPE_SQUARE \
   -p use_lm_refinement:=true
+```
+
+### 4) (Optional) View debug image
+
+```bash
+ros2 topic echo /aruco_single/result
+```
+
+Use `rqt_image_view` or RViz2 for visualization.
+
+## Dependencies
+
+- `ros-humble-cv-bridge`
+- `opencv-python`
+- `numpy`
+- `rclpy`
+- `tf2_ros`
+
+Install cv_bridge if missing:
+
+```bash
+sudo apt install ros-humble-cv-bridge
 ```
 
 > Tip: this script is currently provided as a standalone file in this repository.

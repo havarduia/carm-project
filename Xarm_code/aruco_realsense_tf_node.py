@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
-"""ROS 2 Humble ArUco detector for RealSense with TF + pose output.
+"""ROS 2 Humble ArUco detector using RealSense ROS topics.
 
-Designed as an `aruco_ros` replacement for easy_handeye2 workflows:
-- Publishes TF for detected marker(s)
-- Publishes selected marker pose on `/aruco_single/pose`
-- Publishes annotated debug image on `/aruco_single/result`
+This node is intended as an aruco_ros-style replacement for easy_handeye2.
+It subscribes to:
+- /camera/color/image_raw (sensor_msgs/Image)
+- /camera/color/camera_info (sensor_msgs/CameraInfo)
+
+And publishes:
+- TF transform(s) for detected marker(s)
+- PoseStamped for selected marker on /aruco_single/pose
+- Annotated debug image on /aruco_single/result
 """
 
 from __future__ import annotations
@@ -13,12 +18,12 @@ from typing import Dict, Optional, Tuple
 
 import cv2
 import numpy as np
-import pyrealsense2 as rs
 import rclpy
+from cv_bridge import CvBridge
 from geometry_msgs.msg import PoseStamped, TransformStamped
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CameraInfo, Image
 from tf2_ros import TransformBroadcaster
 
 
@@ -50,8 +55,6 @@ PNP_FLAGS: Dict[str, int] = {
 
 
 class ArucoRealsenseTfNode(Node):
-    """Detect ArUco markers with RealSense input and publish TF transforms."""
-
     def __init__(self) -> None:
         super().__init__("aruco_realsense_tf_node")
 
@@ -59,43 +62,45 @@ class ArucoRealsenseTfNode(Node):
         self._load_parameters()
         self._validate_configuration()
 
+        self.bridge = CvBridge()
         self.tf_broadcaster = TransformBroadcaster(self)
+
         self.debug_image_publisher = self.create_publisher(Image, self.debug_image_topic, 10)
         self.pose_publisher = self.create_publisher(PoseStamped, self.pose_topic, 10)
+
+        self.image_subscriber = self.create_subscription(
+            Image,
+            self.color_image_topic,
+            self._image_callback,
+            10,
+        )
+        self.camera_info_subscriber = self.create_subscription(
+            CameraInfo,
+            self.camera_info_topic,
+            self._camera_info_callback,
+            10,
+        )
+
         self.window_name = "aruco_realsense_debug"
         self.last_tvec_by_id: Dict[int, np.ndarray] = {}
 
-        self.pipeline = rs.pipeline()
-        config = rs.config()
-        config.enable_stream(rs.stream.color, self.width, self.height, rs.format.bgr8, self.fps)
-        profile = self.pipeline.start(config)
-
-        color_stream_profile = profile.get_stream(rs.stream.color).as_video_stream_profile()
-        intrinsics = color_stream_profile.get_intrinsics()
-
-        self.camera_matrix = np.array(
-            [[intrinsics.fx, 0.0, intrinsics.ppx], [0.0, intrinsics.fy, intrinsics.ppy], [0.0, 0.0, 1.0]],
-            dtype=np.float64,
-        )
-        self.distortion_coefficients = np.array(intrinsics.coeffs, dtype=np.float64)
+        self.camera_matrix: Optional[np.ndarray] = None
+        self.distortion_coefficients: Optional[np.ndarray] = None
+        self._camera_info_received = False
 
         self.dictionary = self._load_dictionary(self.aruco_dictionary_name)
         self.detector_parameters = cv2.aruco.DetectorParameters()
-        self.detector_parameters.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX if self.use_subpixel_refinement else cv2.aruco.CORNER_REFINE_NONE
+        self.detector_parameters.cornerRefinementMethod = (
+            cv2.aruco.CORNER_REFINE_SUBPIX
+            if self.use_subpixel_refinement
+            else cv2.aruco.CORNER_REFINE_NONE
+        )
 
-        interval = 1.0 / self.publish_rate_hz if self.publish_rate_hz > 0.0 else 1.0 / 30.0
-        self.timer = self.create_timer(interval, self._process_frame)
         self.add_on_set_parameters_callback(self._on_parameter_update)
 
         self.get_logger().info(
-            "Started ArUco node marker_id=%d size=%.3fm dict=%s pnp=%s subpixel=%s"
-            % (
-                self.marker_id,
-                self.marker_size,
-                self.aruco_dictionary_name,
-                self.pnp_method,
-                str(self.use_subpixel_refinement),
-            )
+            "Started ArUco node. Waiting for camera_info on '%s', images on '%s'"
+            % (self.camera_info_topic, self.color_image_topic)
         )
 
     def _declare_parameters(self) -> None:
@@ -105,13 +110,11 @@ class ArucoRealsenseTfNode(Node):
         self.declare_parameter("camera_frame", "camera_color_optical_frame")
         self.declare_parameter("marker_frame_prefix", "aruco_marker_")
         self.declare_parameter("single_marker_frame_id", "aruco_marker")
+
+        self.declare_parameter("color_image_topic", "/camera/color/image_raw")
+        self.declare_parameter("camera_info_topic", "/camera/color/camera_info")
+
         self.declare_parameter("pose_topic", "/aruco_single/pose")
-
-        self.declare_parameter("width", 640)
-        self.declare_parameter("height", 480)
-        self.declare_parameter("fps", 30)
-        self.declare_parameter("publish_rate_hz", 30.0)
-
         self.declare_parameter("publish_debug_image", True)
         self.declare_parameter("debug_image_topic", "/aruco_single/result")
         self.declare_parameter("show_debug_window", False)
@@ -129,13 +132,11 @@ class ArucoRealsenseTfNode(Node):
         self.camera_frame = str(self.get_parameter("camera_frame").value)
         self.marker_frame_prefix = str(self.get_parameter("marker_frame_prefix").value)
         self.single_marker_frame_id = str(self.get_parameter("single_marker_frame_id").value)
+
+        self.color_image_topic = str(self.get_parameter("color_image_topic").value)
+        self.camera_info_topic = str(self.get_parameter("camera_info_topic").value)
+
         self.pose_topic = str(self.get_parameter("pose_topic").value)
-
-        self.width = int(self.get_parameter("width").value)
-        self.height = int(self.get_parameter("height").value)
-        self.fps = int(self.get_parameter("fps").value)
-        self.publish_rate_hz = float(self.get_parameter("publish_rate_hz").value)
-
         self.publish_debug_image = bool(self.get_parameter("publish_debug_image").value)
         self.debug_image_topic = str(self.get_parameter("debug_image_topic").value)
         self.show_debug_window = bool(self.get_parameter("show_debug_window").value)
@@ -159,6 +160,16 @@ class ArucoRealsenseTfNode(Node):
     def _load_dictionary(self, dictionary_name: str) -> cv2.aruco.Dictionary:
         return cv2.aruco.getPredefinedDictionary(ARUCO_DICTIONARIES[dictionary_name])
 
+    def _camera_info_callback(self, msg: CameraInfo) -> None:
+        self.camera_matrix = np.array(msg.k, dtype=np.float64).reshape((3, 3))
+        self.distortion_coefficients = np.array(msg.d, dtype=np.float64)
+        if len(self.distortion_coefficients.shape) == 1:
+            self.distortion_coefficients = self.distortion_coefficients.reshape((-1, 1))
+
+        if not self._camera_info_received:
+            self._camera_info_received = True
+            self.get_logger().info("Received camera intrinsics from '%s'" % self.camera_info_topic)
+
     def _on_parameter_update(self, params):
         for param in params:
             if param.name == "marker_id":
@@ -180,7 +191,11 @@ class ArucoRealsenseTfNode(Node):
                 self.show_debug_window = bool(param.value)
             elif param.name == "use_subpixel_refinement":
                 self.use_subpixel_refinement = bool(param.value)
-                self.detector_parameters.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX if self.use_subpixel_refinement else cv2.aruco.CORNER_REFINE_NONE
+                self.detector_parameters.cornerRefinementMethod = (
+                    cv2.aruco.CORNER_REFINE_SUBPIX
+                    if self.use_subpixel_refinement
+                    else cv2.aruco.CORNER_REFINE_NONE
+                )
             elif param.name == "use_lm_refinement":
                 self.use_lm_refinement = bool(param.value)
             elif param.name == "pnp_method":
@@ -197,13 +212,19 @@ class ArucoRealsenseTfNode(Node):
                 self.pose_smoothing_alpha = a
         return SetParametersResult(successful=True)
 
-    def _process_frame(self) -> None:
-        frames = self.pipeline.wait_for_frames()
-        color_frame = frames.get_color_frame()
-        if not color_frame:
+    def _image_callback(self, msg: Image) -> None:
+        if self.camera_matrix is None or self.distortion_coefficients is None:
             return
 
-        image = np.asanyarray(color_frame.get_data())
+        try:
+            image = self.bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
+        except Exception as exc:
+            self.get_logger().error(f"Failed to convert image with cv_bridge: {exc}")
+            return
+
+        self._process_frame(image, msg)
+
+    def _process_frame(self, image: np.ndarray, image_msg: Image) -> None:
         corners, ids, _ = cv2.aruco.detectMarkers(image, self.dictionary, parameters=self.detector_parameters)
         debug_image = image.copy() if (self.publish_debug_image or self.show_debug_window) else None
 
@@ -223,7 +244,7 @@ class ArucoRealsenseTfNode(Node):
                     continue
 
                 tvec = self._smooth_translation(marker_id, tvec)
-                stamp = self.get_clock().now().to_msg()
+                stamp = image_msg.header.stamp
 
                 transform = self._build_transform(marker_id, rvec, tvec, stamp)
                 self.tf_broadcaster.sendTransform(transform)
@@ -243,7 +264,7 @@ class ArucoRealsenseTfNode(Node):
                     self._draw_marker_label(debug_image, corners[idx], marker_id, tvec, reproj_error)
 
         if debug_image is not None:
-            self._publish_debug_image(debug_image)
+            self._publish_debug_image(debug_image, image_msg.header)
             if self.show_debug_window:
                 cv2.imshow(self.window_name, debug_image)
                 cv2.waitKey(1)
@@ -302,16 +323,9 @@ class ArucoRealsenseTfNode(Node):
         self.last_tvec_by_id[marker_id] = smoothed
         return smoothed
 
-    def _publish_debug_image(self, image: np.ndarray) -> None:
-        msg = Image()
-        msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = self.camera_frame
-        msg.height = image.shape[0]
-        msg.width = image.shape[1]
-        msg.encoding = "bgr8"
-        msg.is_bigendian = False
-        msg.step = image.shape[1] * image.shape[2]
-        msg.data = image.tobytes()
+    def _publish_debug_image(self, image: np.ndarray, header) -> None:
+        msg = self.bridge.cv2_to_imgmsg(image, encoding="bgr8")
+        msg.header = header
         self.debug_image_publisher.publish(msg)
 
     def _draw_marker_label(
@@ -340,7 +354,9 @@ class ArucoRealsenseTfNode(Node):
         transform = TransformStamped()
         transform.header.stamp = stamp
         transform.header.frame_id = self.camera_frame
-        transform.child_frame_id = self.single_marker_frame_id if self.marker_id >= 0 else f"{self.marker_frame_prefix}{marker_id}"
+        transform.child_frame_id = (
+            self.single_marker_frame_id if self.marker_id >= 0 else f"{self.marker_frame_prefix}{marker_id}"
+        )
 
         transform.transform.translation.x = float(tvec[0])
         transform.transform.translation.y = float(tvec[1])
@@ -406,8 +422,6 @@ class ArucoRealsenseTfNode(Node):
         return float(qx), float(qy), float(qz), float(qw)
 
     def destroy_node(self) -> bool:
-        self.get_logger().info("Stopping RealSense pipeline.")
-        self.pipeline.stop()
         if self.show_debug_window:
             cv2.destroyWindow(self.window_name)
         return super().destroy_node()
