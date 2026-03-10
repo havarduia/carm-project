@@ -21,6 +21,7 @@ import rclpy
 from geometry_msgs.msg import TransformStamped
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
+from sensor_msgs.msg import Image
 from tf2_ros import TransformBroadcaster
 
 
@@ -60,6 +61,9 @@ class ArucoRealsenseTfNode(Node):
         self.declare_parameter("height", 480)
         self.declare_parameter("fps", 30)
         self.declare_parameter("publish_rate_hz", 30.0)
+        self.declare_parameter("publish_debug_image", True)
+        self.declare_parameter("debug_image_topic", "/aruco/debug_image")
+        self.declare_parameter("show_debug_window", False)
 
         self.marker_id = int(self.get_parameter("marker_id").value)
         self.marker_size = float(self.get_parameter("marker_size").value)
@@ -70,10 +74,15 @@ class ArucoRealsenseTfNode(Node):
         self.height = int(self.get_parameter("height").value)
         self.fps = int(self.get_parameter("fps").value)
         self.publish_rate_hz = float(self.get_parameter("publish_rate_hz").value)
+        self.publish_debug_image = bool(self.get_parameter("publish_debug_image").value)
+        self.debug_image_topic = str(self.get_parameter("debug_image_topic").value)
+        self.show_debug_window = bool(self.get_parameter("show_debug_window").value)
 
         self._validate_configuration()
 
         self.tf_broadcaster = TransformBroadcaster(self)
+        self.debug_image_publisher = self.create_publisher(Image, self.debug_image_topic, 10)
+        self.window_name = "aruco_realsense_debug"
 
         self.pipeline = rs.pipeline()
         self.config = rs.config()
@@ -132,6 +141,10 @@ class ArucoRealsenseTfNode(Node):
                     )
                 self.aruco_dictionary_name = name
                 self.dictionary = self._load_dictionary(name)
+            elif param.name == "publish_debug_image":
+                self.publish_debug_image = bool(param.value)
+            elif param.name == "show_debug_window":
+                self.show_debug_window = bool(param.value)
         return SetParametersResult(successful=True)
 
     def _process_frame(self) -> None:
@@ -146,24 +159,69 @@ class ArucoRealsenseTfNode(Node):
             self.dictionary,
             parameters=self.detector_parameters,
         )
+        debug_image = image.copy() if (self.publish_debug_image or self.show_debug_window) else None
 
-        if ids is None or len(ids) == 0:
-            return
+        if ids is not None and len(ids) > 0:
+            if debug_image is not None:
+                cv2.aruco.drawDetectedMarkers(debug_image, corners, ids)
+            ids_flat = ids.flatten()
+            rvecs, tvecs, _obj_points = cv2.aruco.estimatePoseSingleMarkers(
+                corners,
+                self.marker_size,
+                self.camera_matrix,
+                self.distortion_coefficients,
+            )
 
-        ids_flat = ids.flatten()
-        rvecs, tvecs, _obj_points = cv2.aruco.estimatePoseSingleMarkers(
-            corners,
-            self.marker_size,
-            self.camera_matrix,
-            self.distortion_coefficients,
+            for idx, detected_id in enumerate(ids_flat):
+                if self.marker_id >= 0 and detected_id != self.marker_id:
+                    continue
+
+                transform = self._build_transform(int(detected_id), rvecs[idx], tvecs[idx])
+                self.tf_broadcaster.sendTransform(transform)
+
+                if debug_image is not None:
+                    cv2.drawFrameAxes(
+                        debug_image,
+                        self.camera_matrix,
+                        self.distortion_coefficients,
+                        rvecs[idx],
+                        tvecs[idx],
+                        self.marker_size * 0.5,
+                    )
+                    self._draw_marker_label(debug_image, corners[idx], int(detected_id), tvecs[idx])
+
+        if debug_image is not None:
+            self._publish_debug_image(debug_image)
+            if self.show_debug_window:
+                cv2.imshow(self.window_name, debug_image)
+                cv2.waitKey(1)
+
+    def _publish_debug_image(self, image: np.ndarray) -> None:
+        msg = Image()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.frame_id = self.camera_frame
+        msg.height = image.shape[0]
+        msg.width = image.shape[1]
+        msg.encoding = "bgr8"
+        msg.is_bigendian = False
+        msg.step = image.shape[1] * image.shape[2]
+        msg.data = image.tobytes()
+        self.debug_image_publisher.publish(msg)
+
+    def _draw_marker_label(self, image: np.ndarray, marker_corners: np.ndarray, marker_id: int, tvec: np.ndarray) -> None:
+        text_point = marker_corners[0][0].astype(int)
+        distance = float(np.linalg.norm(tvec[0]))
+        label = f"id={marker_id} z={tvec[0][2]:.2f}m d={distance:.2f}m"
+        cv2.putText(
+            image,
+            label,
+            (int(text_point[0]), int(text_point[1]) - 10),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (0, 255, 0),
+            2,
+            cv2.LINE_AA,
         )
-
-        for idx, detected_id in enumerate(ids_flat):
-            if self.marker_id >= 0 and detected_id != self.marker_id:
-                continue
-
-            transform = self._build_transform(int(detected_id), rvecs[idx], tvecs[idx])
-            self.tf_broadcaster.sendTransform(transform)
 
     def _build_transform(self, marker_id: int, rvec: np.ndarray, tvec: np.ndarray) -> TransformStamped:
         transform = TransformStamped()
@@ -223,6 +281,8 @@ class ArucoRealsenseTfNode(Node):
     def destroy_node(self) -> bool:
         self.get_logger().info("Stopping RealSense pipeline.")
         self.pipeline.stop()
+        if self.show_debug_window:
+            cv2.destroyWindow(self.window_name)
         return super().destroy_node()
 
 
