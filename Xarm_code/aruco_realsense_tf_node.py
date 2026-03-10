@@ -1,24 +1,21 @@
 #!/usr/bin/env python3
-"""ROS 2 Humble node for ArUco detection with Intel RealSense.
+"""ROS 2 Humble ArUco detector for RealSense with TF + pose output.
 
-This node:
-- Captures color images from a RealSense camera with pyrealsense2.
-- Reads camera intrinsics directly from the stream profile.
-- Detects ArUco markers with OpenCV.
-- Publishes the selected marker pose as TF.
-
-Parameters make marker ID, marker dictionary, and marker size easy to change.
+Designed as an `aruco_ros` replacement for easy_handeye2 workflows:
+- Publishes TF for detected marker(s)
+- Publishes selected marker pose on `/aruco_single/pose`
+- Publishes annotated debug image on `/aruco_single/result`
 """
 
 from __future__ import annotations
 
-from typing import Dict
+from typing import Dict, Optional, Tuple
 
 import cv2
 import numpy as np
 import pyrealsense2 as rs
 import rclpy
-from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import PoseStamped, TransformStamped
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from sensor_msgs.msg import Image
@@ -45,6 +42,12 @@ ARUCO_DICTIONARIES: Dict[str, int] = {
     "DICT_ARUCO_ORIGINAL": cv2.aruco.DICT_ARUCO_ORIGINAL,
 }
 
+PNP_FLAGS: Dict[str, int] = {
+    "ITERATIVE": cv2.SOLVEPNP_ITERATIVE,
+    "IPPE_SQUARE": cv2.SOLVEPNP_IPPE_SQUARE,
+    "SQPNP": cv2.SOLVEPNP_SQPNP,
+}
+
 
 class ArucoRealsenseTfNode(Node):
     """Detect ArUco markers with RealSense input and publish TF transforms."""
@@ -52,73 +55,106 @@ class ArucoRealsenseTfNode(Node):
     def __init__(self) -> None:
         super().__init__("aruco_realsense_tf_node")
 
-        self.declare_parameter("marker_id", -1)
-        self.declare_parameter("marker_size", 0.05)
-        self.declare_parameter("aruco_dictionary", "DICT_4X4_50")
-        self.declare_parameter("camera_frame", "camera_color_optical_frame")
-        self.declare_parameter("marker_frame_prefix", "aruco_marker_")
-        self.declare_parameter("width", 640)
-        self.declare_parameter("height", 480)
-        self.declare_parameter("fps", 30)
-        self.declare_parameter("publish_rate_hz", 30.0)
-        self.declare_parameter("publish_debug_image", True)
-        self.declare_parameter("debug_image_topic", "/aruco/debug_image")
-        self.declare_parameter("show_debug_window", False)
-
-        self.marker_id = int(self.get_parameter("marker_id").value)
-        self.marker_size = float(self.get_parameter("marker_size").value)
-        self.aruco_dictionary_name = str(self.get_parameter("aruco_dictionary").value)
-        self.camera_frame = str(self.get_parameter("camera_frame").value)
-        self.marker_frame_prefix = str(self.get_parameter("marker_frame_prefix").value)
-        self.width = int(self.get_parameter("width").value)
-        self.height = int(self.get_parameter("height").value)
-        self.fps = int(self.get_parameter("fps").value)
-        self.publish_rate_hz = float(self.get_parameter("publish_rate_hz").value)
-        self.publish_debug_image = bool(self.get_parameter("publish_debug_image").value)
-        self.debug_image_topic = str(self.get_parameter("debug_image_topic").value)
-        self.show_debug_window = bool(self.get_parameter("show_debug_window").value)
-
+        self._declare_parameters()
+        self._load_parameters()
         self._validate_configuration()
 
         self.tf_broadcaster = TransformBroadcaster(self)
         self.debug_image_publisher = self.create_publisher(Image, self.debug_image_topic, 10)
+        self.pose_publisher = self.create_publisher(PoseStamped, self.pose_topic, 10)
         self.window_name = "aruco_realsense_debug"
+        self.last_tvec_by_id: Dict[int, np.ndarray] = {}
 
         self.pipeline = rs.pipeline()
-        self.config = rs.config()
-        self.config.enable_stream(rs.stream.color, self.width, self.height, rs.format.bgr8, self.fps)
-        self.profile = self.pipeline.start(self.config)
+        config = rs.config()
+        config.enable_stream(rs.stream.color, self.width, self.height, rs.format.bgr8, self.fps)
+        profile = self.pipeline.start(config)
 
-        color_stream_profile = self.profile.get_stream(rs.stream.color).as_video_stream_profile()
+        color_stream_profile = profile.get_stream(rs.stream.color).as_video_stream_profile()
         intrinsics = color_stream_profile.get_intrinsics()
 
         self.camera_matrix = np.array(
             [[intrinsics.fx, 0.0, intrinsics.ppx], [0.0, intrinsics.fy, intrinsics.ppy], [0.0, 0.0, 1.0]],
             dtype=np.float64,
         )
-
         self.distortion_coefficients = np.array(intrinsics.coeffs, dtype=np.float64)
 
         self.dictionary = self._load_dictionary(self.aruco_dictionary_name)
         self.detector_parameters = cv2.aruco.DetectorParameters()
+        self.detector_parameters.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX if self.use_subpixel_refinement else cv2.aruco.CORNER_REFINE_NONE
 
         interval = 1.0 / self.publish_rate_hz if self.publish_rate_hz > 0.0 else 1.0 / 30.0
         self.timer = self.create_timer(interval, self._process_frame)
         self.add_on_set_parameters_callback(self._on_parameter_update)
 
         self.get_logger().info(
-            "Started ArUco RealSense TF node with marker_id=%d, marker_size=%.3f m, dictionary=%s"
-            % (self.marker_id, self.marker_size, self.aruco_dictionary_name)
+            "Started ArUco node marker_id=%d size=%.3fm dict=%s pnp=%s subpixel=%s"
+            % (
+                self.marker_id,
+                self.marker_size,
+                self.aruco_dictionary_name,
+                self.pnp_method,
+                str(self.use_subpixel_refinement),
+            )
         )
+
+    def _declare_parameters(self) -> None:
+        self.declare_parameter("marker_id", -1)
+        self.declare_parameter("marker_size", 0.05)
+        self.declare_parameter("aruco_dictionary", "DICT_4X4_50")
+        self.declare_parameter("camera_frame", "camera_color_optical_frame")
+        self.declare_parameter("marker_frame_prefix", "aruco_marker_")
+        self.declare_parameter("single_marker_frame_id", "aruco_marker")
+        self.declare_parameter("pose_topic", "/aruco_single/pose")
+
+        self.declare_parameter("width", 640)
+        self.declare_parameter("height", 480)
+        self.declare_parameter("fps", 30)
+        self.declare_parameter("publish_rate_hz", 30.0)
+
+        self.declare_parameter("publish_debug_image", True)
+        self.declare_parameter("debug_image_topic", "/aruco_single/result")
+        self.declare_parameter("show_debug_window", False)
+
+        self.declare_parameter("use_subpixel_refinement", True)
+        self.declare_parameter("pnp_method", "IPPE_SQUARE")
+        self.declare_parameter("use_lm_refinement", True)
+        self.declare_parameter("max_reprojection_error_px", 3.0)
+        self.declare_parameter("pose_smoothing_alpha", 0.0)
+
+    def _load_parameters(self) -> None:
+        self.marker_id = int(self.get_parameter("marker_id").value)
+        self.marker_size = float(self.get_parameter("marker_size").value)
+        self.aruco_dictionary_name = str(self.get_parameter("aruco_dictionary").value)
+        self.camera_frame = str(self.get_parameter("camera_frame").value)
+        self.marker_frame_prefix = str(self.get_parameter("marker_frame_prefix").value)
+        self.single_marker_frame_id = str(self.get_parameter("single_marker_frame_id").value)
+        self.pose_topic = str(self.get_parameter("pose_topic").value)
+
+        self.width = int(self.get_parameter("width").value)
+        self.height = int(self.get_parameter("height").value)
+        self.fps = int(self.get_parameter("fps").value)
+        self.publish_rate_hz = float(self.get_parameter("publish_rate_hz").value)
+
+        self.publish_debug_image = bool(self.get_parameter("publish_debug_image").value)
+        self.debug_image_topic = str(self.get_parameter("debug_image_topic").value)
+        self.show_debug_window = bool(self.get_parameter("show_debug_window").value)
+
+        self.use_subpixel_refinement = bool(self.get_parameter("use_subpixel_refinement").value)
+        self.pnp_method = str(self.get_parameter("pnp_method").value)
+        self.use_lm_refinement = bool(self.get_parameter("use_lm_refinement").value)
+        self.max_reprojection_error_px = float(self.get_parameter("max_reprojection_error_px").value)
+        self.pose_smoothing_alpha = float(self.get_parameter("pose_smoothing_alpha").value)
 
     def _validate_configuration(self) -> None:
         if self.marker_size <= 0.0:
             raise ValueError("marker_size must be > 0")
         if self.aruco_dictionary_name not in ARUCO_DICTIONARIES:
-            raise ValueError(
-                f"Invalid aruco_dictionary '{self.aruco_dictionary_name}'. "
-                f"Options: {', '.join(sorted(ARUCO_DICTIONARIES.keys()))}"
-            )
+            raise ValueError(f"Invalid aruco_dictionary '{self.aruco_dictionary_name}'")
+        if self.pnp_method not in PNP_FLAGS:
+            raise ValueError(f"Invalid pnp_method '{self.pnp_method}'")
+        if not 0.0 <= self.pose_smoothing_alpha < 1.0:
+            raise ValueError("pose_smoothing_alpha must be in [0.0, 1.0)")
 
     def _load_dictionary(self, dictionary_name: str) -> cv2.aruco.Dictionary:
         return cv2.aruco.getPredefinedDictionary(ARUCO_DICTIONARIES[dictionary_name])
@@ -128,23 +164,37 @@ class ArucoRealsenseTfNode(Node):
             if param.name == "marker_id":
                 self.marker_id = int(param.value)
             elif param.name == "marker_size":
-                new_marker_size = float(param.value)
-                if new_marker_size <= 0.0:
+                v = float(param.value)
+                if v <= 0.0:
                     return SetParametersResult(successful=False, reason="marker_size must be > 0")
-                self.marker_size = new_marker_size
+                self.marker_size = v
             elif param.name == "aruco_dictionary":
                 name = str(param.value)
                 if name not in ARUCO_DICTIONARIES:
-                    return SetParametersResult(
-                        successful=False,
-                        reason=f"Invalid aruco_dictionary '{name}'",
-                    )
+                    return SetParametersResult(successful=False, reason=f"Invalid aruco_dictionary '{name}'")
                 self.aruco_dictionary_name = name
                 self.dictionary = self._load_dictionary(name)
             elif param.name == "publish_debug_image":
                 self.publish_debug_image = bool(param.value)
             elif param.name == "show_debug_window":
                 self.show_debug_window = bool(param.value)
+            elif param.name == "use_subpixel_refinement":
+                self.use_subpixel_refinement = bool(param.value)
+                self.detector_parameters.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX if self.use_subpixel_refinement else cv2.aruco.CORNER_REFINE_NONE
+            elif param.name == "use_lm_refinement":
+                self.use_lm_refinement = bool(param.value)
+            elif param.name == "pnp_method":
+                name = str(param.value)
+                if name not in PNP_FLAGS:
+                    return SetParametersResult(successful=False, reason=f"Invalid pnp_method '{name}'")
+                self.pnp_method = name
+            elif param.name == "max_reprojection_error_px":
+                self.max_reprojection_error_px = float(param.value)
+            elif param.name == "pose_smoothing_alpha":
+                a = float(param.value)
+                if not 0.0 <= a < 1.0:
+                    return SetParametersResult(successful=False, reason="pose_smoothing_alpha must be in [0.0, 1.0)")
+                self.pose_smoothing_alpha = a
         return SetParametersResult(successful=True)
 
     def _process_frame(self) -> None:
@@ -154,47 +204,103 @@ class ArucoRealsenseTfNode(Node):
             return
 
         image = np.asanyarray(color_frame.get_data())
-        corners, ids, _ = cv2.aruco.detectMarkers(
-            image,
-            self.dictionary,
-            parameters=self.detector_parameters,
-        )
+        corners, ids, _ = cv2.aruco.detectMarkers(image, self.dictionary, parameters=self.detector_parameters)
         debug_image = image.copy() if (self.publish_debug_image or self.show_debug_window) else None
 
         if ids is not None and len(ids) > 0:
             if debug_image is not None:
                 cv2.aruco.drawDetectedMarkers(debug_image, corners, ids)
-            ids_flat = ids.flatten()
-            rvecs, tvecs, _obj_points = cv2.aruco.estimatePoseSingleMarkers(
-                corners,
-                self.marker_size,
-                self.camera_matrix,
-                self.distortion_coefficients,
-            )
 
-            for idx, detected_id in enumerate(ids_flat):
-                if self.marker_id >= 0 and detected_id != self.marker_id:
+            for idx, detected_id in enumerate(ids.flatten()):
+                marker_id = int(detected_id)
+                if self.marker_id >= 0 and marker_id != self.marker_id:
                     continue
 
-                transform = self._build_transform(int(detected_id), rvecs[idx], tvecs[idx])
+                rvec, tvec, reproj_error = self._estimate_pose(corners[idx])
+                if rvec is None or tvec is None:
+                    continue
+                if self.max_reprojection_error_px > 0.0 and reproj_error > self.max_reprojection_error_px:
+                    continue
+
+                tvec = self._smooth_translation(marker_id, tvec)
+                stamp = self.get_clock().now().to_msg()
+
+                transform = self._build_transform(marker_id, rvec, tvec, stamp)
                 self.tf_broadcaster.sendTransform(transform)
+
+                if self.marker_id >= 0:
+                    self.pose_publisher.publish(self._build_pose_msg(rvec, tvec, stamp))
 
                 if debug_image is not None:
                     cv2.drawFrameAxes(
                         debug_image,
                         self.camera_matrix,
                         self.distortion_coefficients,
-                        rvecs[idx],
-                        tvecs[idx],
+                        rvec,
+                        tvec,
                         self.marker_size * 0.5,
                     )
-                    self._draw_marker_label(debug_image, corners[idx], int(detected_id), tvecs[idx])
+                    self._draw_marker_label(debug_image, corners[idx], marker_id, tvec, reproj_error)
 
         if debug_image is not None:
             self._publish_debug_image(debug_image)
             if self.show_debug_window:
                 cv2.imshow(self.window_name, debug_image)
                 cv2.waitKey(1)
+
+    def _estimate_pose(self, marker_corners: np.ndarray) -> Tuple[Optional[np.ndarray], Optional[np.ndarray], float]:
+        half_size = self.marker_size * 0.5
+        object_points = np.array(
+            [
+                [-half_size, half_size, 0.0],
+                [half_size, half_size, 0.0],
+                [half_size, -half_size, 0.0],
+                [-half_size, -half_size, 0.0],
+            ],
+            dtype=np.float64,
+        )
+        image_points = marker_corners.reshape(4, 2).astype(np.float64)
+
+        success, rvec, tvec = cv2.solvePnP(
+            object_points,
+            image_points,
+            self.camera_matrix,
+            self.distortion_coefficients,
+            flags=PNP_FLAGS[self.pnp_method],
+        )
+        if not success:
+            return None, None, 1e9
+
+        if self.use_lm_refinement:
+            rvec, tvec = cv2.solvePnPRefineLM(
+                object_points,
+                image_points,
+                self.camera_matrix,
+                self.distortion_coefficients,
+                rvec,
+                tvec,
+            )
+
+        projected_points, _ = cv2.projectPoints(
+            object_points,
+            rvec,
+            tvec,
+            self.camera_matrix,
+            self.distortion_coefficients,
+        )
+        reproj_error = float(np.mean(np.linalg.norm(projected_points.reshape(-1, 2) - image_points, axis=1)))
+        return rvec, tvec, reproj_error
+
+    def _smooth_translation(self, marker_id: int, tvec: np.ndarray) -> np.ndarray:
+        if self.pose_smoothing_alpha <= 0.0:
+            return tvec
+        previous = self.last_tvec_by_id.get(marker_id)
+        if previous is None:
+            self.last_tvec_by_id[marker_id] = tvec
+            return tvec
+        smoothed = self.pose_smoothing_alpha * previous + (1.0 - self.pose_smoothing_alpha) * tvec
+        self.last_tvec_by_id[marker_id] = smoothed
+        return smoothed
 
     def _publish_debug_image(self, image: np.ndarray) -> None:
         msg = Image()
@@ -208,30 +314,37 @@ class ArucoRealsenseTfNode(Node):
         msg.data = image.tobytes()
         self.debug_image_publisher.publish(msg)
 
-    def _draw_marker_label(self, image: np.ndarray, marker_corners: np.ndarray, marker_id: int, tvec: np.ndarray) -> None:
+    def _draw_marker_label(
+        self,
+        image: np.ndarray,
+        marker_corners: np.ndarray,
+        marker_id: int,
+        tvec: np.ndarray,
+        reproj_error: float,
+    ) -> None:
         text_point = marker_corners[0][0].astype(int)
-        distance = float(np.linalg.norm(tvec[0]))
-        label = f"id={marker_id} z={tvec[0][2]:.2f}m d={distance:.2f}m"
+        distance = float(np.linalg.norm(tvec.reshape(3)))
+        label = f"id={marker_id} z={float(tvec[2]):.3f}m d={distance:.3f}m err={reproj_error:.2f}px"
         cv2.putText(
             image,
             label,
             (int(text_point[0]), int(text_point[1]) - 10),
             cv2.FONT_HERSHEY_SIMPLEX,
-            0.5,
+            0.45,
             (0, 255, 0),
             2,
             cv2.LINE_AA,
         )
 
-    def _build_transform(self, marker_id: int, rvec: np.ndarray, tvec: np.ndarray) -> TransformStamped:
+    def _build_transform(self, marker_id: int, rvec: np.ndarray, tvec: np.ndarray, stamp) -> TransformStamped:
         transform = TransformStamped()
-        transform.header.stamp = self.get_clock().now().to_msg()
+        transform.header.stamp = stamp
         transform.header.frame_id = self.camera_frame
-        transform.child_frame_id = f"{self.marker_frame_prefix}{marker_id}"
+        transform.child_frame_id = self.single_marker_frame_id if self.marker_id >= 0 else f"{self.marker_frame_prefix}{marker_id}"
 
-        transform.transform.translation.x = float(tvec[0][0])
-        transform.transform.translation.y = float(tvec[0][1])
-        transform.transform.translation.z = float(tvec[0][2])
+        transform.transform.translation.x = float(tvec[0])
+        transform.transform.translation.y = float(tvec[1])
+        transform.transform.translation.z = float(tvec[2])
 
         rotation_matrix, _ = cv2.Rodrigues(rvec)
         qx, qy, qz, qw = self._rotation_matrix_to_quaternion(rotation_matrix)
@@ -240,9 +353,23 @@ class ArucoRealsenseTfNode(Node):
         transform.transform.rotation.y = qy
         transform.transform.rotation.z = qz
         transform.transform.rotation.w = qw
-
         return transform
 
+    def _build_pose_msg(self, rvec: np.ndarray, tvec: np.ndarray, stamp) -> PoseStamped:
+        pose = PoseStamped()
+        pose.header.stamp = stamp
+        pose.header.frame_id = self.camera_frame
+        pose.pose.position.x = float(tvec[0])
+        pose.pose.position.y = float(tvec[1])
+        pose.pose.position.z = float(tvec[2])
+
+        rotation_matrix, _ = cv2.Rodrigues(rvec)
+        qx, qy, qz, qw = self._rotation_matrix_to_quaternion(rotation_matrix)
+        pose.pose.orientation.x = qx
+        pose.pose.orientation.y = qy
+        pose.pose.orientation.z = qz
+        pose.pose.orientation.w = qw
+        return pose
 
     @staticmethod
     def _rotation_matrix_to_quaternion(rotation_matrix: np.ndarray):
