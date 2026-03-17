@@ -111,30 +111,3 @@ sudo apt install ros-humble-cv-bridge
 
 > Tip: this script is currently provided as a standalone file in this repository.
 > To run with `ros2 run`, place it in a ROS2 Python package and register it as a console script.
-
-## Component detection + xArm movement UI
-
-`Xarm_code/yolo_model.py` now publishes detection results that can be visualized in RViz2:
-
-- `/component_detection/target_point` (`geometry_msgs/msg/PointStamped`)
-- `/component_detection/target_marker` (`visualization_msgs/msg/Marker`)
-- TF frame: `link_base -> detected_component`
-
-Use `Xarm_code/test.py` to run a Tkinter UI that:
-
-1. Detects the component with YOLO + depth + TF conversion
-2. Prefills editable robot coordinates
-3. Asks for user confirmation before moving the arm
-4. Moves to the selected coordinate using xArm APIs
-
-Recommended flow:
-
-```bash
-python3 Xarm_code/test.py
-```
-
-In RViz2, set `Fixed Frame` to `link_base` and add:
-
-- `TF`
-- `Marker` topic `/component_detection/target_marker`
-- `PointStamped` topic `/component_detection/target_point`
