@@ -20,22 +20,10 @@ class move():
         """
         self.arm.set_position(*[130, 0, 150, 180, 0, 0], speed=self.speed, wait=True)
         
-    def pick_prepare(self):
+    def place(self):
         """
-        Prepares to pick the object.
+        Places the object in the bin.
         """
-        self.arm.set_position(*[400, 0, 300, 100, 0, 0], speed=self.speed, wait=True)
-        
-    def jork(self):
-        """
-        Jorks the arm.
-        """
-        
-        for i in range(3):
-            self.arm.set_gripper_position(800, wait=False)
-            self.arm.set_position(*[550, 0, 100, 180, 0, 0], speed=self.speed, wait=False)
-            self.arm.set_gripper_position(0, wait=False)
-            self.arm.set_position(*[300, 0, 100, 180, 0, 0], speed=self.speed, wait=False)
-        
-            
+        self.arm.set_position(*[78.1, 220.6, 32.4, 180, 0, 0], speed=self.speed, wait=True)
+        self.arm.set_gripper_position(800, wait=True)
 

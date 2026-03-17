@@ -17,7 +17,7 @@ import tempfile
 from inference_sdk import InferenceHTTPClient
 
 
-CONF_THRESHOLD = 0.80
+CONF_THRESHOLD = 0.70
 
 
 class YoloSnapshotNode(Node):
@@ -28,6 +28,7 @@ class YoloSnapshotNode(Node):
         self.bridge = CvBridge()
         self.frame = None
         self.depth = None
+        self.camera_info_ready = False
 
         self.camera_model = PinholeCameraModel()
 
@@ -60,10 +61,13 @@ class YoloSnapshotNode(Node):
             api_key="LhkBeIDhei8ywxS1RaCw"
         )
 
+        self.target_position = None
+
         self.get_logger().info("Press 's' to detect, 'q' to quit")
 
     def info_callback(self, msg):
         self.camera_model.fromCameraInfo(msg)
+        self.camera_info_ready = True
 
     def depth_callback(self, msg):
         self.depth = self.bridge.imgmsg_to_cv2(msg)
@@ -86,6 +90,14 @@ class YoloSnapshotNode(Node):
 
         if self.frame is None or self.depth is None:
             print("Waiting for camera data...")
+            return
+
+        if not self.camera_info_ready:
+            print("Waiting for camera info...")
+            return
+
+        if self.camera_model.P is None:
+            print("Camera model not initialized yet...")
             return
 
         frame = self.frame.copy()
@@ -188,6 +200,9 @@ class YoloSnapshotNode(Node):
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,255), 2)
 
         cv2.imshow("detection", frame)
+
+        self.target_position = (rx*1000.0, ry*1000.0, rz*1000.0)
+        return rx, ry, rz
 
 
 def main(args=None):
