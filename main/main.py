@@ -9,11 +9,14 @@ import tf2_geometry_msgs
 import cv2
 import numpy as np
 import tempfile
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from inference_sdk import InferenceHTTPClient
-from yolo_model import YoloSnapshotNode
-from movement import move
+from detection_model.yolo_model import YoloSnapshotNode
+from helpers.movement import MoveArm
 import time
-from xarm.wrapper import XArmAPI
 
 def main(args=None):    
 
@@ -25,16 +28,11 @@ def main(args=None):
     rclpy.init(args=args)
     node = YoloSnapshotNode(target_class=target_component)
     
-    # Initialize xArm
-    arm = XArmAPI('192.168.1.225')
-    time.sleep(0.5)
-    arm.set_tcp_maxacc(1000)
-    speed = 200
-    arm.clean_error()
-    moveto = move(speed=speed, arm=arm)
-    arm.set_mode(0)
-    arm.set_state(0)
-    arm.set_gripper_position(850, wait=True)
+    # Initialize MoveIt arm wrapper
+    print("Initializing MoveIt planner for arm...")
+    moveto = MoveArm()
+    
+    moveto.set_gripper(850)
     # Go home
     moveto.home()
 
@@ -55,17 +53,26 @@ def main(args=None):
                 continue
             print(f"Captured target in main: {x}, {y}, {z}")
             
-            arm.set_position(*[x+offset_x, y, z+offset_z+40, 180, 0, 0], wait=True)
-            arm.set_gripper_position(0, wait=True)
-            arm.set_position(*[x+offset_x, y, z+offset_z+40, 180, 0, 0], wait=True)
+            # Hover over target
+            moveto.move_to(x + offset_x, y, z + offset_z + 40)
+            
+            # Grip
+            moveto.set_gripper(0)
+            
+            # Lift
+            moveto.move_to(x + offset_x, y, z + offset_z + 40)
+            
+            # Place and drop
             current_place_x += step_size  # Increment x for the next item
             moveto.place(current_place_x, 150)  # Place in the bin
+            moveto.set_gripper(850) 
+            
+            # Go back home
             moveto.home()
 
             # Reset it so it waits for another 's' press
             node.target_position = None
 
-    arm.disconnect()
     node.destroy_node()
     rclpy.shutdown()
 

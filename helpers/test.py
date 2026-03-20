@@ -2,7 +2,11 @@
 
 import time
 from xarm.wrapper import XArmAPI
-from movement import move
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from helpers.movement import move
 
 
 arm = XArmAPI('192.168.1.225')
