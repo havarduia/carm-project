@@ -20,10 +20,10 @@ class move():
         """
         self.arm.set_position(*[130, 0, 150, 180, 0, 0], speed=self.speed, wait=True)
         
-    def place(self):
+    def place(self, x, z):
         """
         Places the object in the bin.
         """
-        self.arm.set_position(*[78.1, 220.6, 32.4, 180, 0, 0], speed=self.speed, wait=True)
+        self.arm.set_position(*[x, 220.6, z, 180, 0, 0], speed=self.speed, wait=True)
         self.arm.set_gripper_position(800, wait=True)
 

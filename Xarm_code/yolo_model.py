@@ -22,8 +22,11 @@ CONF_THRESHOLD = 0.70
 
 class YoloSnapshotNode(Node):
 
-    def __init__(self):
+    def __init__(self, target_class=None):
         super().__init__('yolo_snapshot_node')
+        
+        # Can be set to "capacitor", "resistor", "transformer", or None for any
+        self.target_class = target_class
 
         self.bridge = CvBridge()
         self.frame = None
@@ -102,13 +105,10 @@ class YoloSnapshotNode(Node):
 
         frame = self.frame.copy()
 
-        temp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
-        cv2.imwrite(temp.name, frame)
-
         result = self.client.run_workflow(
             workspace_name="carm-yitb6",
             workflow_id="small-object-detection-sahi-2",
-            images={"image": temp.name},
+            images={"image": frame},
             use_cache=True
         )
 
@@ -116,9 +116,13 @@ class YoloSnapshotNode(Node):
 
         # Filter detections by confidence
         preds = [p for p in preds if p['confidence'] >= CONF_THRESHOLD]
+        
+        # Filter detections by target class
+        if self.target_class:
+            preds = [p for p in preds if p['class'].lower() == self.target_class.lower()]
 
         if len(preds) == 0:
-            print("No detections above threshold")
+            print(f"No valid detections above threshold or matching target class '{self.target_class}'")
             return
 
         best = max(preds, key=lambda x: x['confidence'])
@@ -200,6 +204,7 @@ class YoloSnapshotNode(Node):
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,255), 2)
 
         cv2.imshow("detection", frame)
+        cv2.waitKey(100)  # Force OpenCV to render the window before movement
 
         self.target_position = (rx*1000.0, ry*1000.0, rz*1000.0)
         return rx, ry, rz
@@ -209,7 +214,8 @@ def main(args=None):
 
     rclpy.init(args=args)
 
-    node = YoloSnapshotNode()
+    # Set the target class here: "capacitor", "resistor", "transformer", or None for any
+    node = YoloSnapshotNode(target_class="capacitor")
 
     rclpy.spin(node)
 
