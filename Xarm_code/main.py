@@ -18,10 +18,10 @@ from xarm.wrapper import XArmAPI
 def main(args=None):    
 
     offset_x = 10
-    offset_z = 10
+    offset_z = 50
 
     # Set the component type to find: "capacitor", "resistor", "transformer", or None for any
-    target_component = "capacitor"
+    target_component = "transformer"
     rclpy.init(args=args)
     node = YoloSnapshotNode(target_class=target_component)
     
@@ -29,41 +29,68 @@ def main(args=None):
     arm = XArmAPI('192.168.1.225')
     time.sleep(0.5)
     arm.set_tcp_maxacc(1000)
-    speed = 200
+    speed = 500
     arm.clean_error()
+    arm.clean_warn()
+    arm.motion_enable(enable=True)
     moveto = move(speed=speed, arm=arm)
     arm.set_mode(0)
     arm.set_state(0)
-    arm.set_gripper_position(850, wait=True)
+    arm.set_gripper_position(0, wait=True)
     # Go home
     moveto.home()
 
     current_place_x = 70  # Starting x coordinate for placement
     step_size = 1       # Amount to increase x each cycle
 
-    # We spin repeatedly looking for target_position
+    # We spin repeatedly looking for target_positions
     while rclpy.ok():
         rclpy.spin_once(node, timeout_sec=0.1)
         
-        if node.target_position is not None:
-            # target_position captured when 's' is pressed
+        if node.target_positions:
+            # target_positions captured when 's' is pressed
+            valid_positions = []
+            for pos in node.target_positions:
+                if pos[2] >= 5:
+                    valid_positions.append(pos)
+                else:
+                    print(f"Invalid target position ({pos[0]}, {pos[1]}, {pos[2]}) detected, skipping...")
 
-            x, y, z = node.target_position
-            if z < 5:
-                print("Invalid target position detected, skipping...")
-                node.target_position = None
-                continue
-            print(f"Captured target in main: {x}, {y}, {z}")
+            # Get current arm position to use as the starting point for shortest path
+            code, current_pos = arm.get_position()
+            if code != 0:
+                current_pos = [130, 0, 150]  # Fallback to home coordinates
             
-            arm.set_position(*[x+offset_x, y, z+offset_z+40, 180, 0, 0], wait=True)
-            arm.set_gripper_position(0, wait=True)
-            arm.set_position(*[x+offset_x, y, z+offset_z+40, 180, 0, 0], wait=True)
-            current_place_x += step_size  # Increment x for the next item
-            moveto.place(current_place_x, 150)  # Place in the bin
+            curr_x, curr_y = current_pos[0], current_pos[1]
+            path = []
+            
+            # Nearest neighbor algorithm for shortest path calculation
+            while valid_positions:
+                nearest_idx = 0
+                min_dist = float('inf')
+                for i, pos in enumerate(valid_positions):
+                    dist = ((pos[0] + offset_x) - curr_x)**2 + (pos[1] - curr_y)**2
+                    if dist < min_dist:
+                        min_dist = dist
+                        nearest_idx = i
+                
+                next_pos = valid_positions.pop(nearest_idx)
+                path.append(next_pos)
+                curr_x, curr_y = next_pos[0] + offset_x, next_pos[1]
+
+            for pos in path:
+                x, y, z = pos
+                print(f"Captured target in main: {x}, {y}, {z}")
+                
+                # Move above the component to point at it
+                arm.set_position(*[x+offset_x, y, z+offset_z, 180, 0, 0], wait=True)
+                time.sleep(0.5)  # Pause to show we are pointing at the component
+            
+            # Go home after processing all items
             moveto.home()
 
-            # Reset it so it waits for another 's' press
-            node.target_position = None
+            # Reset so it waits for another 's' press
+            node.target_positions = []
 
     arm.disconnect()
     node.destroy_node()
