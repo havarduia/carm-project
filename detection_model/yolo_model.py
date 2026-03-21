@@ -107,7 +107,7 @@ class YoloSnapshotNode(Node):
 
         result = self.client.run_workflow(
             workspace_name="carm-yitb6",
-            workflow_id="small-object-detection-sahi-3",
+            workflow_id="small-object-detection-sahi-4",
             images={"image": frame},
             use_cache=True
         )

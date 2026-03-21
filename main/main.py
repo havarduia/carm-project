@@ -21,7 +21,7 @@ import time
 def main(args=None):    
 
     offset_x = 10
-    offset_z = 10
+    offset_z = -10
 
     # Set the component type to find: "capacitor", "resistor", "transformer", or None for any
     target_component = "capacitor"
@@ -54,19 +54,19 @@ def main(args=None):
             print(f"Captured target in main: {x}, {y}, {z}")
             
             # Hover over target
-            moveto.move_to(x + offset_x, y, z + offset_z + 40)
+            moveto.move_to(x + offset_x, y, z + offset_z)
             
             # Grip
             moveto.set_gripper(0)
-            
             # Lift
-            moveto.move_to(x + offset_x, y, z + offset_z + 40)
+            moveto.move_to(x + offset_x, y, z + offset_z+80)
             
             # Place and drop
             current_place_x += step_size  # Increment x for the next item
-            moveto.place(current_place_x, 150)  # Place in the bin
+            moveto.place(current_place_x, z=z + offset_z+80) 
+            moveto.place(current_place_x, z=z + offset_z)  # Place in the bin
             moveto.set_gripper(850) 
-            
+            moveto.place(current_place_x, z=z + offset_z+20) 
             # Go back home
             moveto.home()
 
