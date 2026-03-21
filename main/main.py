@@ -9,9 +9,13 @@ import tf2_geometry_msgs
 import cv2
 import numpy as np
 import tempfile
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from inference_sdk import InferenceHTTPClient
-from yolo_model import YoloSnapshotNode
-from movement import move
+from detection_model.yolo_model import YoloSnapshotNode
+from helpers.movement import move
 import time
 from xarm.wrapper import XArmAPI
 
