@@ -212,14 +212,14 @@ class MoveArm(Node):
     # ==============================
     # API
     # ==============================
-    def move_to(self, x, y, z, speed=0.25):
+    def move_to(self, x, y, z, speed=0.7):
         return self.cartesian_move(x, y, z, speed)
 
     def home(self):
-        return self.move_to(130, 0, 150, speed=0.4)
+        return self.move_to(130, 0, 150, speed=0.7)
 
     def place(self, x, z):
-        return self.move_to(x, 220.6, z, speed=0.25)
+        return self.move_to(x, 220.6, z, speed=0.7)
 
     # ==============================
     # Gripper

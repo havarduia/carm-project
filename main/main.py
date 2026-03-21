@@ -22,7 +22,6 @@ def main(args=None):
 
     offset_x = 10
     offset_z = -10
-
     # Set the component type to find: "capacitor", "resistor", "transformer", or None for any
     target_component = "capacitor"
     rclpy.init(args=args)
@@ -37,41 +36,55 @@ def main(args=None):
     moveto.home()
 
     current_place_x = 70  # Starting x coordinate for placement
-    step_size = 1       # Amount to increase x each cycle
-
+    step_size = 50       # Amount to increase x each cycle
+    
     # We spin repeatedly looking for target_position
     while rclpy.ok():
         rclpy.spin_once(node, timeout_sec=0.1)
         
-        if node.target_position is not None:
-            # target_position captured when 's' is pressed
+        if getattr(node, 'target_positions', None) is not None:
+            # target_positions captured when 's' is pressed
+            targets = node.target_positions.copy()
+            
+            # Sort the targets to follow the shortest path starting from arm's current position (home -> bin, etc.)
+            # Nearest neighbor from a generic start location (e.g. 0, 0, 0 or typical home)
+            path = []
+            curr = (0, 0, 0)
+            while targets:
+                # Find closest target to current position
+                closest = min(targets, key=lambda p: (p[0]-curr[0])**2 + (p[1]-curr[1])**2 + (p[2]-curr[2])**2)
+                targets.remove(closest)
+                path.append(closest)
+                curr = closest
 
-            x, y, z = node.target_position
-            if z < 5:
-                print("Invalid target position detected, skipping...")
-                node.target_position = None
-                continue
-            print(f"Captured target in main: {x}, {y}, {z}")
-            
-            # Hover over target
-            moveto.move_to(x + offset_x, y, z + offset_z)
-            
-            # Grip
-            moveto.set_gripper(0)
-            # Lift
-            moveto.move_to(x + offset_x, y, z + offset_z+80)
-            
-            # Place and drop
-            current_place_x += step_size  # Increment x for the next item
-            moveto.place(current_place_x, z=z + offset_z+80) 
-            moveto.place(current_place_x, z=z + offset_z)  # Place in the bin
-            moveto.set_gripper(850) 
-            moveto.place(current_place_x, z=z + offset_z+20) 
-            # Go back home
-            moveto.home()
+            for x, y, z in path:
+                if z < 5:
+                    print("Invalid target position detected, skipping...")
+                    continue
+                print(f"Captured target in main: {x}, {y}, {z}")
+                
+                # Hover over target
+                moveto.move_to(x + offset_x, y, z + offset_z)
+                
+                # Grip
+                moveto.set_gripper(0)
+                # Lift
+                moveto.move_to(x + offset_x, y, z + offset_z+80)
+                
+                # Place and drop
+                current_place_x += step_size  # Increment x for the next item
+                moveto.place(current_place_x, z=z + offset_z+80) 
+                moveto.place(current_place_x, z=z + offset_z)  # Place in the bin
+                moveto.set_gripper(850) 
+                # Go back home
+                moveto.home()
+                
+                # Update current position to home for the next distance calculation 
+                # (since it returns to home, the next closest object should be calculated from home/origin)
+                curr = (0, 0, 0)
 
             # Reset it so it waits for another 's' press
-            node.target_position = None
+            node.target_positions = None
 
     node.destroy_node()
     rclpy.shutdown()

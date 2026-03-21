@@ -64,7 +64,7 @@ class YoloSnapshotNode(Node):
             api_key="LhkBeIDhei8ywxS1RaCw"
         )
 
-        self.target_position = None
+        self.target_positions = None
 
         self.get_logger().info("Press 's' to detect, 'q' to quit")
 
@@ -125,59 +125,52 @@ class YoloSnapshotNode(Node):
             print(f"No valid detections above threshold or matching target class '{self.target_class}'")
             return
 
-        best = max(preds, key=lambda x: x['confidence'])
-
-        u = int(best['x'])
-        v = int(best['y'])
-
-        print("Pixel:", u, v)
-
         h, w = self.depth.shape
+        valid_targets = []
 
-        # clamp to avoid border crash
-        u = np.clip(u, 2, w-3)
-        v = np.clip(v, 2, h-3)
+        for p in preds:
+            u = int(p['x'])
+            v = int(p['y'])
 
-        window = self.depth[v-2:v+3, u-2:u+3]
-        Z = np.median(window) / 1000.0
+            # clamp to avoid border crash
+            u = np.clip(u, 2, w-3)
+            v = np.clip(v, 2, h-3)
 
-        if Z == 0:
-            print("Invalid depth")
-            return
+            window = self.depth[v-2:v+3, u-2:u+3]
+            Z = np.median(window) / 1000.0
 
-        ray = self.camera_model.projectPixelTo3dRay((u, v))
+            if Z == 0:
+                print("Invalid depth for one target, skipping...")
+                continue
 
-        X = ray[0] * Z
-        Y = ray[1] * Z
+            ray = self.camera_model.projectPixelTo3dRay((u, v))
 
-        print("Camera frame:", X, Y, Z)
+            X = ray[0] * Z
+            Y = ray[1] * Z
 
-        point = PointStamped()
+            point = PointStamped()
+            point.header.frame_id = "camera_color_optical_frame"
+            point.header.stamp = self.get_clock().now().to_msg()
+            point.point.x = float(X)
+            point.point.y = float(Y)
+            point.point.z = float(Z)
 
-        point.header.frame_id = "camera_color_optical_frame"
-        point.header.stamp = self.get_clock().now().to_msg()
+            try:
+                robot_point = self.tf_buffer.transform(
+                    point,
+                    "link_base",
+                    timeout=rclpy.duration.Duration(seconds=1.0)
+                )
 
-        point.point.x = float(X)
-        point.point.y = float(Y)
-        point.point.z = float(Z)
+                rx = robot_point.point.x
+                ry = robot_point.point.y
+                rz = robot_point.point.z
 
-        try:
+                valid_targets.append((rx * 1000.0, ry * 1000.0, rz * 1000.0))
 
-            robot_point = self.tf_buffer.transform(
-                point,
-                "link_base",
-                timeout=rclpy.duration.Duration(seconds=1.0)
-            )
-
-            rx = robot_point.point.x
-            ry = robot_point.point.y
-            rz = robot_point.point.z
-
-            print(f"Robot frame: {rx * 1000.0:.3f}, {ry * 1000.0:.3f}, {rz * 1000.0:.3f}")
-
-        except Exception as e:
-            print("TF transform failed:", e)
-            return
+            except Exception as e:
+                print("TF transform failed:", e)
+                continue
 
         # Draw detections
         for p in preds:
@@ -198,16 +191,16 @@ class YoloSnapshotNode(Node):
             cv2.putText(frame, label, (x1, y1-10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
 
-        coord_text = f"Robot: {rx:.3f}, {ry:.3f}, {rz:.3f}"
-
-        cv2.putText(frame, coord_text, (30,40),
+        cv2.putText(frame, "Multiple detections shown", (30,40),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,255), 2)
 
         cv2.imshow("detection", frame)
         cv2.waitKey(100)  # Force OpenCV to render the window before movement
 
-        self.target_position = (rx*1000.0, ry*1000.0, rz*1000.0)
-        return rx, ry, rz
+        if valid_targets:
+            self.target_positions = valid_targets
+            return valid_targets
+        return None
 
 
 def main(args=None):
