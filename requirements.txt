@@ -1,0 +1,10 @@
+# Python packages installed via pip
+numpy>=1.24
+opencv-contrib-python>=4.8
+PyYAML>=6.0
+inference-sdk>=0.25
+
+# ROS2 packages used by this project are typically installed through apt/rosdep,
+# not pip (examples: rclpy, cv_bridge, image_geometry, tf2_ros, sensor_msgs,
+# geometry_msgs, moveit_msgs, control_msgs, shape_msgs, launch, launch_ros,
+# ament_index_python).
