@@ -58,4 +58,14 @@ Once the camera is publishing, the TF is registered, and MoveIt is ready to acce
 python3 main/main.py
 ```
 
+### Optional: run without connected hardware
+
+If you do not have a RealSense camera or xArm connected, you can run a mock/demo cycle:
+
+```bash
+python3 main/main.py --no-hardware
+```
+
+This mode avoids camera subscriptions and robot controllers by using synthetic detections and mocked arm/gripper commands.
+
 *Note: The script currently defaults to looking for a `capacitor` (or another manually configured target class inside `main.py`). The camera stream will display in an OpenCV window. By default, pressing `s` on the OpenCV window often triggers the detection snapshot.*
