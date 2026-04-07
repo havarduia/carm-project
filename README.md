@@ -12,7 +12,7 @@ This repository contains an xArm pick-and-place workflow that integrates ROS2, a
 
 ## Prerequisites & Dependencies
 
-To run this workflow, you need the following installed in your ROS2 environment (tested on Humble/Foxy):
+To run this workflow, you need the following installed in your ROS2 environment (tested on Humble):
 
 - **ROS2** 
 - **librealsense2** and **realsense-ros**
