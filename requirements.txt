@@ -1,8 +1,12 @@
 # Python packages installed via pip
-numpy>=1.24
-opencv-contrib-python>=4.8
+# numpy is pinned <2 because ROS2 Humble's apt-installed cv_bridge (and other
+# rclpy interop libs) are compiled against the NumPy 1.x C API; NumPy 2.x
+# breaks cv_bridge at import time ("_ARRAY_API not found"). opencv-contrib-python
+# and inference-sdk are capped to versions that still support NumPy 1.x to match.
+numpy>=1.24,<2
+opencv-contrib-python>=4.8,<5
 PyYAML>=6.0
-inference-sdk>=0.25
+inference-sdk>=0.25,<=0.45.3
 
 # ROS2 packages used by this project are typically installed through apt/rosdep,
 # not pip (examples: rclpy, cv_bridge, image_geometry, tf2_ros, sensor_msgs,
