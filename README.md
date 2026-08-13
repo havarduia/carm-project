@@ -28,10 +28,10 @@ You **must** launch the required ROS2 drivers, static transforms, and the MoveIt
 
 ### 1) Start the RealSense ROS2 driver
 
-The application relies on aligned depth and RGB topics from the camera.
+The application relies on aligned depth and RGB topics from the camera. `publish_tf:=false` is required — otherwise the driver's own camera TF tree collides with the static transform in step 2 below and breaks the `link_base` → `camera_color_optical_frame` lookup.
 
 ```bash
-ros2 launch realsense2_camera rs_launch.py align_depth.enable:=true enable_sync:=true enable_rgbd:=true
+ros2 launch realsense2_camera rs_launch.py align_depth.enable:=true enable_sync:=true enable_rgbd:=true publish_tf:=false
 ```
 
 ### 2) Publish the static transform
