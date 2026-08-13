@@ -164,7 +164,7 @@ class ArucoRealsenseTfNode(Node):
     def _camera_info_callback(self, msg: CameraInfo) -> None:
         self.camera_matrix = np.array(msg.k, dtype=np.float64).reshape((3, 3))
         self.distortion_coefficients = np.array(msg.d, dtype=np.float64)
-        if len(self.distortion_coefficients.shape) == 1:
+        if self.distortion_coefficients.ndim == 1:
             self.distortion_coefficients = self.distortion_coefficients.reshape((-1, 1))
 
         if not self._camera_info_received:

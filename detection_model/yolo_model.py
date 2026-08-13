@@ -201,20 +201,3 @@ class YoloSnapshotNode(Node):
             self.target_positions = valid_targets
             return valid_targets
         return None
-
-
-def main(args=None):
-
-    rclpy.init(args=args)
-
-    # Set the target class here: "capacitor", "resistor", "transformer", or None for any
-    node = YoloSnapshotNode(target_class="capacitor")
-
-    rclpy.spin(node)
-
-    node.destroy_node()
-    rclpy.shutdown()
-
-
-if __name__ == '__main__':
-    main()
