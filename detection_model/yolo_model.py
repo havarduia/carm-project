@@ -114,12 +114,12 @@ class YoloSnapshotNode(Node):
 
         preds = result[0]['predictions']['predictions']
 
-        # Filter detections by confidence
-        preds = [p for p in preds if p['confidence'] >= CONF_THRESHOLD]
-        
-        # Filter detections by target class
-        if self.target_class:
-            preds = [p for p in preds if p['class'].lower() == self.target_class.lower()]
+        # Filter by confidence and (optionally) target class
+        preds = [
+            p for p in preds
+            if p['confidence'] >= CONF_THRESHOLD
+            and (not self.target_class or p['class'].lower() == self.target_class.lower())
+        ]
 
         if len(preds) == 0:
             print(f"No valid detections above threshold or matching target class '{self.target_class}'")

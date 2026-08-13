@@ -23,6 +23,7 @@ from cv_bridge import CvBridge
 from geometry_msgs.msg import PoseStamped, TransformStamped
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
+from scipy.spatial.transform import Rotation
 from sensor_msgs.msg import CameraInfo, Image
 from tf2_ros import TransformBroadcaster
 
@@ -363,7 +364,7 @@ class ArucoRealsenseTfNode(Node):
         transform.transform.translation.z = float(tvec[2])
 
         rotation_matrix, _ = cv2.Rodrigues(rvec)
-        qx, qy, qz, qw = self._rotation_matrix_to_quaternion(rotation_matrix)
+        qx, qy, qz, qw = Rotation.from_matrix(rotation_matrix).as_quat()
 
         transform.transform.rotation.x = qx
         transform.transform.rotation.y = qy
@@ -380,46 +381,12 @@ class ArucoRealsenseTfNode(Node):
         pose.pose.position.z = float(tvec[2])
 
         rotation_matrix, _ = cv2.Rodrigues(rvec)
-        qx, qy, qz, qw = self._rotation_matrix_to_quaternion(rotation_matrix)
+        qx, qy, qz, qw = Rotation.from_matrix(rotation_matrix).as_quat()
         pose.pose.orientation.x = qx
         pose.pose.orientation.y = qy
         pose.pose.orientation.z = qz
         pose.pose.orientation.w = qw
         return pose
-
-    @staticmethod
-    def _rotation_matrix_to_quaternion(rotation_matrix: np.ndarray):
-        m00, m01, m02 = rotation_matrix[0]
-        m10, m11, m12 = rotation_matrix[1]
-        m20, m21, m22 = rotation_matrix[2]
-
-        trace = m00 + m11 + m22
-        if trace > 0.0:
-            s = 0.5 / np.sqrt(trace + 1.0)
-            qw = 0.25 / s
-            qx = (m21 - m12) * s
-            qy = (m02 - m20) * s
-            qz = (m10 - m01) * s
-        elif m00 > m11 and m00 > m22:
-            s = 2.0 * np.sqrt(1.0 + m00 - m11 - m22)
-            qw = (m21 - m12) / s
-            qx = 0.25 * s
-            qy = (m01 + m10) / s
-            qz = (m02 + m20) / s
-        elif m11 > m22:
-            s = 2.0 * np.sqrt(1.0 + m11 - m00 - m22)
-            qw = (m02 - m20) / s
-            qx = (m01 + m10) / s
-            qy = 0.25 * s
-            qz = (m12 + m21) / s
-        else:
-            s = 2.0 * np.sqrt(1.0 + m22 - m00 - m11)
-            qw = (m10 - m01) / s
-            qx = (m02 + m20) / s
-            qy = (m12 + m21) / s
-            qz = 0.25 * s
-
-        return float(qx), float(qy), float(qz), float(qw)
 
     def destroy_node(self) -> bool:
         if self.show_debug_window:

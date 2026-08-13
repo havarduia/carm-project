@@ -1,4 +1,3 @@
-import math
 import time
 import rclpy
 from rclpy.node import Node
@@ -11,6 +10,10 @@ from moveit_msgs.srv import GetCartesianPath
 
 from moveit_msgs.msg import PlanningScene, CollisionObject
 from shape_msgs.msg import SolidPrimitive
+
+# The gripper always approaches straight down: 180 deg roll about X.
+# (x, y, z, w) quaternion for that fixed orientation.
+DOWNWARD_ORIENTATION = (1.0, 0.0, 0.0, 0.0)
 
 
 class MoveArm(Node):
@@ -35,32 +38,26 @@ class MoveArm(Node):
 
         self.get_logger().info("MoveArm ready.")
 
-        # Add pole
-        self.add_pole()
+        self._add_collision_object(
+            "camera_pole", SolidPrimitive.CYLINDER, [0.78, 0.02], (0.053, -0.175, 0.78 / 2.0)
+        )
         time.sleep(1)
-        self.add_camera_ball()
+        self._add_collision_object(
+            "camera_ball", SolidPrimitive.SPHERE, [0.06], (0.111, -0.1504, 0.35)
+        )
         time.sleep(1)
 
-    # ==============================
-    # Add collision pole
-    # ==============================
-    def add_pole(self):
+    def _add_collision_object(self, object_id, shape_type, dimensions, position):
         co = CollisionObject()
-        co.id = "camera_pole"
+        co.id = object_id
         co.header.frame_id = "link_base"
 
         primitive = SolidPrimitive()
-        primitive.type = SolidPrimitive.CYLINDER
-
-        height = 0.78
-        radius = 0.02
-
-        primitive.dimensions = [height, radius]
+        primitive.type = shape_type
+        primitive.dimensions = dimensions
 
         pose = Pose()
-        pose.position.x = 0.053
-        pose.position.y = -0.175
-        pose.position.z = height / 2.0
+        pose.position.x, pose.position.y, pose.position.z = position
         pose.orientation.w = 1.0
 
         co.primitives.append(primitive)
@@ -72,45 +69,12 @@ class MoveArm(Node):
         scene.world.collision_objects.append(co)
 
         self.scene_pub.publish(scene)
-
-        self.get_logger().info("Pole added.")
-
-    def add_camera_ball(self):
-        self.get_logger().info("Adding camera collision sphere...")
-
-        co = CollisionObject()
-        co.id = "camera_ball"
-        co.header.frame_id = "link_base"
-
-        primitive = SolidPrimitive()
-        primitive.type = SolidPrimitive.SPHERE
-
-        radius = 0.06  # 6 cm (adjust if needed)
-        primitive.dimensions = [radius]
-
-        pose = Pose()
-        pose.position.x = 0.111
-        pose.position.y = -0.1504
-        pose.position.z = 0.35
-
-        pose.orientation.w = 1.0
-
-        co.primitives.append(primitive)
-        co.primitive_poses.append(pose)
-        co.operation = CollisionObject.ADD
-
-        scene = PlanningScene()
-        scene.is_diff = True
-        scene.world.collision_objects.append(co)
-
-        self.scene_pub.publish(scene)
-
-        self.get_logger().info("Camera sphere added.")
+        self.get_logger().info(f"{object_id} added.")
 
     # ==============================
     # Pose (fixed downward)
     # ==============================
-    def create_pose(self, x, y, z, roll=180.0, pitch=0.0, yaw=0.0):
+    def create_pose(self, x, y, z):
         pose = PoseStamped()
         pose.header.frame_id = "link_base"
         pose.header.stamp = self.get_clock().now().to_msg()
@@ -119,21 +83,8 @@ class MoveArm(Node):
         pose.pose.position.y = y / 1000.0
         pose.pose.position.z = z / 1000.0
 
-        r = math.radians(roll)
-        p = math.radians(pitch)
-        y_ = math.radians(yaw)
-
-        cy = math.cos(y_ * 0.5)
-        sy = math.sin(y_ * 0.5)
-        cp = math.cos(p * 0.5)
-        sp = math.sin(p * 0.5)
-        cr = math.cos(r * 0.5)
-        sr = math.sin(r * 0.5)
-
-        pose.pose.orientation.w = cr * cp * cy + sr * sp * sy
-        pose.pose.orientation.x = sr * cp * cy - cr * sp * sy
-        pose.pose.orientation.y = cr * sp * cy + sr * cp * sy
-        pose.pose.orientation.z = cr * cp * sy - sr * sp * cy
+        (pose.pose.orientation.x, pose.pose.orientation.y,
+         pose.pose.orientation.z, pose.pose.orientation.w) = DOWNWARD_ORIENTATION
 
         return pose
 
@@ -160,9 +111,9 @@ class MoveArm(Node):
         return traj
 
     # ==============================
-    # Cartesian move (FIXED)
+    # Cartesian move
     # ==============================
-    def cartesian_move(self, x, y, z, speed=0.25):
+    def move_to(self, x, y, z, speed=0.7):
         self.get_logger().info(f"Cartesian move to ({x}, {y}, {z})")
 
         pose = self.create_pose(x, y, z)
@@ -171,8 +122,6 @@ class MoveArm(Node):
         req.group_name = "xarm6"
         req.link_name = "link_tcp"
         req.header.frame_id = "link_base"
-
-        # 🔥 CRITICAL FIX
         req.start_state.is_diff = True
 
         req.waypoints = [pose.pose]
@@ -208,12 +157,6 @@ class MoveArm(Node):
 
         self.get_logger().info("Move complete.")
         return True
-
-    # ==============================
-    # API
-    # ==============================
-    def move_to(self, x, y, z, speed=0.7):
-        return self.cartesian_move(x, y, z, speed)
 
     def home(self):
         return self.move_to(130, 0, 150, speed=0.7)
