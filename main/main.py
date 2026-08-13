@@ -74,7 +74,7 @@ def main(args=None):
             print(f"[mock] using {len(targets)} synthetic target(s): {targets}")
         else:
             rclpy.spin_once(node, timeout_sec=0.1)
-            if getattr(node, "target_positions", None) is None:
+            if node.target_positions is None:
                 continue
             targets = node.target_positions.copy()
 
