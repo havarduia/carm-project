@@ -3,6 +3,10 @@ from rclpy.node import Node
 
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import PointStamped
+from std_msgs.msg import Header
+from visualization_msgs.msg import Marker, MarkerArray
+
+from rclpy.qos import DurabilityPolicy, QoSProfile
 
 from cv_bridge import CvBridge
 from image_geometry import PinholeCameraModel
@@ -24,7 +28,7 @@ import tty
 from inference_sdk import InferenceHTTPClient
 
 
-CONF_THRESHOLD = 0.40
+CONF_THRESHOLD = 0.60
 
 # Half-width in px of the median window sampled around a detection centre. Kept
 # small and central so it reads the top face of the component, not the table
@@ -45,6 +49,13 @@ DUPLICATE_RADIUS_MM = 8.0
 
 # Annotated snapshot, for an RViz2 Image display.
 DETECTION_IMAGE_TOPIC = '/yolo/detection_image'
+
+# One box per detection, for an RViz2 MarkerArray display.
+DETECTION_BOX_TOPIC = '/yolo/detection_boxes'
+
+# A box thinner than this (m) is invisible edge-on in RViz2. Flat components
+# read as a near-zero depth extent, so give every side a floor.
+MIN_BOX_SIZE_M = 0.005
 
 
 def cbreak_stdin():
@@ -78,6 +89,39 @@ def deproject(camera_model, u, v, depth_m):
     ray = camera_model.projectPixelTo3dRay((u, v))
     scale = depth_m / ray[2]
     return ray[0] * scale, ray[1] * scale, depth_m
+
+
+def bbox_points(camera_model, depth, p):
+    """Every usable depth pixel inside a detection box, as camera-frame metres.
+
+    Zeros ("no reading") and anything outside the working range fall out with
+    the range check, so a box overhanging the table edge contributes nothing
+    rather than a wall of bogus points.
+    """
+    h, w = depth.shape
+    x1 = max(0, int(p['x'] - p['width'] / 2))
+    x2 = min(w, int(p['x'] + p['width'] / 2) + 1)
+    y1 = max(0, int(p['y'] - p['height'] / 2))
+    y2 = min(h, int(p['y'] + p['height'] / 2) + 1)
+
+    points = []
+    for v in range(y1, y2):
+        for u in range(x1, x2):
+            Z = float(depth[v, u]) / 1000.0
+            if DEPTH_RANGE_M[0] <= Z <= DEPTH_RANGE_M[1]:
+                points.append(deproject(camera_model, u, v, Z))
+    return points
+
+
+def bbox_extent(points):
+    """Axis-aligned (centre, size) in metres around deprojected points, or None."""
+    if not points:
+        return None
+    lo = [min(c) for c in zip(*points)]
+    hi = [max(c) for c in zip(*points)]
+    centre = [(a + b) / 2.0 for a, b in zip(lo, hi)]
+    size = [max(b - a, MIN_BOX_SIZE_M) for a, b in zip(lo, hi)]
+    return centre, size
 
 
 class YoloSnapshotNode(Node):
@@ -127,6 +171,14 @@ class YoloSnapshotNode(Node):
 
         self.image_pub = self.create_publisher(Image, DETECTION_IMAGE_TOPIC, 1)
 
+        # Snapshots are published once per keypress, so latch them: an RViz2
+        # opened after the detection still gets the last boxes.
+        self.box_pub = self.create_publisher(
+            MarkerArray,
+            DETECTION_BOX_TOPIC,
+            QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL),
+        )
+
         self.target_positions = None
 
         cbreak_stdin()
@@ -134,7 +186,8 @@ class YoloSnapshotNode(Node):
 
         self.get_logger().info(
             f"Press 's' in this terminal to detect, 'q' to quit. "
-            f"Results are published on {DETECTION_IMAGE_TOPIC}"
+            f"Results are published on {DETECTION_IMAGE_TOPIC} "
+            f"and {DETECTION_BOX_TOPIC}"
         )
 
     def poll_key(self):
@@ -150,6 +203,35 @@ class YoloSnapshotNode(Node):
         if self.frame_stamp is not None:
             msg.header.stamp = self.frame_stamp
         self.image_pub.publish(msg)
+
+    def publish_boxes(self, preds):
+        """One hitbox per detection, in the camera optical frame.
+
+        Left in the camera frame on purpose - RViz2 walks the same TF chain to
+        link_base that the grasp points go through, so no transform here.
+        Visualisation only; MoveIt never sees these.
+        """
+        header = Header(frame_id="camera_color_optical_frame")
+        if self.frame_stamp is not None:
+            header.stamp = self.frame_stamp
+
+        # Clears last snapshot's boxes, so a removed component does not linger.
+        markers = [Marker(action=Marker.DELETEALL)]
+
+        for i, p in enumerate(preds):
+            extent = bbox_extent(bbox_points(self.camera_model, self.depth, p))
+            if extent is None:
+                continue
+            centre, size = extent
+
+            m = Marker(header=header, ns='detections', id=i, type=Marker.CUBE)
+            m.pose.position.x, m.pose.position.y, m.pose.position.z = centre
+            m.pose.orientation.w = 1.0
+            m.scale.x, m.scale.y, m.scale.z = size
+            m.color.g, m.color.a = 1.0, 0.5
+            markers.append(m)
+
+        self.box_pub.publish(MarkerArray(markers=markers))
 
     def info_callback(self, msg):
         self.camera_model.fromCameraInfo(msg)
@@ -228,6 +310,7 @@ class YoloSnapshotNode(Node):
         if len(preds) == 0:
             print(f"No valid detections above threshold or matching target class '{self.target_class}'")
             self.publish_frame(frame)
+            self.publish_boxes([])
             return
 
         if self.depth.shape[:2] != frame.shape[:2]:
@@ -302,6 +385,7 @@ class YoloSnapshotNode(Node):
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,255), 2)
 
         self.publish_frame(frame)
+        self.publish_boxes(preds)
 
         if valid_targets:
             self.target_positions = valid_targets

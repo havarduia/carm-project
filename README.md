@@ -116,6 +116,14 @@ View it in RViz2 with an **Image** display on that topic, or:
 ros2 run rqt_image_view rqt_image_view /yolo/detection_image
 ```
 
+The same detections are published as a `visualization_msgs/MarkerArray` on
+`/yolo/detection_boxes` — one translucent box per component, sized from the depth
+pixels inside its detection box, in `camera_color_optical_frame`. Add a
+**MarkerArray** display on that topic in RViz2 with the fixed frame set to
+`link_base` to see the components sitting where the arm will reach for them. The
+topic is latched, so it survives opening RViz2 after a detection. These boxes are
+visualisation only — they are not collision objects and MoveIt never sees them.
+
 ### Table limit
 
 `MIN_Z_MM` in `helpers/movement.py` is a hard floor on the TCP z, in mm in `link_base`.

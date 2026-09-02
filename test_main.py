@@ -6,7 +6,16 @@ import sys
 from image_geometry import PinholeCameraModel
 from sensor_msgs.msg import CameraInfo
 
-from detection_model.yolo_model import deproject, read_key
+import numpy as np
+
+from detection_model.yolo_model import (
+    DEPTH_RANGE_M,
+    MIN_BOX_SIZE_M,
+    bbox_extent,
+    bbox_points,
+    deproject,
+    read_key,
+)
 from helpers.movement import MIN_Z_MM
 from main.main import MockMoveArm, order_targets
 
@@ -39,6 +48,37 @@ def test_deproject():
 
     # On the optical axis the ray is already (0, 0, 1), so nothing moves.
     assert deproject(model, 320.0, 240.0, 0.4) == (0.0, 0.0, 0.4)
+
+
+def test_bbox_points():
+    model = _camera_model()
+    depth = np.zeros((480, 640), dtype=np.uint16)
+    depth[238:243, 318:323] = 500  # 5x5 patch of 0.5 m readings
+
+    pts = bbox_points(model, depth, {"x": 320.0, "y": 240.0, "width": 5, "height": 5})
+    assert len(pts) == 25, len(pts)
+    assert all(abs(z - 0.5) < 1e-9 for _, _, z in pts)
+
+    # Unmeasured (0) and out-of-range pixels are dropped, not deprojected onto
+    # the camera or out past the table.
+    depth[240, 320] = 0
+    depth[240, 321] = int(DEPTH_RANGE_M[1] * 1000) + 1
+    assert len(bbox_points(model, depth, {"x": 320.0, "y": 240.0, "width": 5, "height": 5})) == 23
+
+    # A box hanging off the frame edge is clipped, not wrapped or crashed.
+    assert bbox_points(model, depth, {"x": 1.0, "y": 1.0, "width": 20, "height": 20}) == []
+
+
+def test_bbox_extent():
+    assert bbox_extent([]) is None
+
+    centre, size = bbox_extent([(0.0, 0.0, 0.5), (0.1, 0.2, 0.6)])
+    assert centre == [0.05, 0.1, 0.55]
+    assert all(abs(a - b) < 1e-9 for a, b in zip(size, [0.1, 0.2, 0.1]))
+
+    # A flat component measures ~0 deep; the box still has to be visible.
+    _, size = bbox_extent([(0.0, 0.0, 0.5), (0.1, 0.1, 0.5)])
+    assert size[2] == MIN_BOX_SIZE_M
 
 
 def test_order_targets():
@@ -86,6 +126,8 @@ def test_z_floor():
 if __name__ == "__main__":
     test_order_targets()
     test_deproject()
+    test_bbox_points()
+    test_bbox_extent()
     test_read_key()
     test_z_floor()
     print("ok")
