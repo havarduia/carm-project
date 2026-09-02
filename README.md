@@ -107,7 +107,14 @@ python3 main/main.py --no-hardware
 
 This mode avoids camera subscriptions and robot controllers by using synthetic detections and mocked arm/gripper commands.
 
-*Note: `--target-class` narrows detection to a single class; by default every detected class is picked and sorted. The camera stream displays in an OpenCV window; press `s` there to take a detection snapshot, `q` to quit.*
+*Note: `--target-class` narrows detection to a single class; by default every detected class is picked and sorted. Press `s` in the terminal running `main.py` to take a detection snapshot, `q` to quit — no OpenCV window is opened.*
+
+The annotated snapshot is published as `sensor_msgs/Image` on `/yolo/detection_image`.
+View it in RViz2 with an **Image** display on that topic, or:
+
+```bash
+ros2 run rqt_image_view rqt_image_view /yolo/detection_image
+```
 
 ### Table limit
 

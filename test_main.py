@@ -1,9 +1,12 @@
 """Self-checks for the pure ordering and coordinate logic. Run: python3 test_main.py"""
 
+import os
+import sys
+
 from image_geometry import PinholeCameraModel
 from sensor_msgs.msg import CameraInfo
 
-from detection_model.yolo_model import deproject
+from detection_model.yolo_model import deproject, read_key
 from helpers.movement import MIN_Z_MM
 from main.main import MockMoveArm, order_targets
 
@@ -58,6 +61,21 @@ def test_order_targets():
     assert order_targets(labelled) == [(1, 0, 0, "capacitor"), (5, 0, 0, "resistor")]
 
 
+def test_read_key():
+    # Non-blocking: nothing typed yet means None, not a stalled node.
+    r, w = os.pipe()
+    stdin, original = os.fdopen(r), sys.stdin
+    sys.stdin = stdin
+    try:
+        assert read_key() is None
+        os.write(w, b"s")
+        assert read_key() == "s"
+    finally:
+        sys.stdin = original
+        stdin.close()
+        os.close(w)
+
+
 def test_z_floor():
     # The floor is refused, not clamped, so a bad target fails loudly.
     arm = MockMoveArm()
@@ -68,5 +86,6 @@ def test_z_floor():
 if __name__ == "__main__":
     test_order_targets()
     test_deproject()
+    test_read_key()
     test_z_floor()
     print("ok")

@@ -10,11 +10,16 @@ from image_geometry import PinholeCameraModel
 import tf2_ros
 import tf2_geometry_msgs
 
+import atexit
 import collections
 import cv2
 import math
 import numpy as np
 import os
+import select
+import sys
+import termios
+import tty
 
 from inference_sdk import InferenceHTTPClient
 
@@ -37,6 +42,30 @@ DEPTH_RANGE_M = (0.15, 1.5)
 # SAHI slices the frame, so one component near a tile seam can be reported
 # twice. Targets closer together than this (mm) are the same object.
 DUPLICATE_RADIUS_MM = 8.0
+
+# Annotated snapshot, for an RViz2 Image display.
+DETECTION_IMAGE_TOPIC = '/yolo/detection_image'
+
+
+def cbreak_stdin():
+    """Deliver single keypresses without Enter, and restore the tty on exit.
+
+    cbreak, not raw, so Ctrl-C still interrupts. No-op when stdin is not a
+    terminal (piped input, launched from a launch file).
+    """
+    if not sys.stdin.isatty():
+        return
+    fd = sys.stdin.fileno()
+    old = termios.tcgetattr(fd)
+    tty.setcbreak(fd)
+    atexit.register(termios.tcsetattr, fd, termios.TCSADRAIN, old)
+
+
+def read_key():
+    """One pending keypress from stdin, or None if nothing is waiting."""
+    if not select.select([sys.stdin], [], [], 0)[0]:
+        return None
+    return sys.stdin.read(1)
 
 
 def deproject(camera_model, u, v, depth_m):
@@ -96,9 +125,31 @@ class YoloSnapshotNode(Node):
             api_key=os.environ["ROBOFLOW_API_KEY"],
         )
 
+        self.image_pub = self.create_publisher(Image, DETECTION_IMAGE_TOPIC, 1)
+
         self.target_positions = None
 
-        self.get_logger().info("Press 's' to detect, 'q' to quit")
+        cbreak_stdin()
+        self.create_timer(0.1, self.poll_key)
+
+        self.get_logger().info(
+            f"Press 's' in this terminal to detect, 'q' to quit. "
+            f"Results are published on {DETECTION_IMAGE_TOPIC}"
+        )
+
+    def poll_key(self):
+        key = read_key()
+        if key == 's':
+            self.run_detection()
+        elif key == 'q' and rclpy.ok():
+            rclpy.shutdown()
+
+    def publish_frame(self, frame):
+        msg = self.bridge.cv2_to_imgmsg(frame, 'bgr8')
+        msg.header.frame_id = "camera_color_optical_frame"
+        if self.frame_stamp is not None:
+            msg.header.stamp = self.frame_stamp
+        self.image_pub.publish(msg)
 
     def info_callback(self, msg):
         self.camera_model.fromCameraInfo(msg)
@@ -112,16 +163,6 @@ class YoloSnapshotNode(Node):
         self.frame = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
         # TF is looked up at the moment the frame was captured, not at detection time.
         self.frame_stamp = msg.header.stamp
-
-        cv2.imshow("camera", self.frame)
-
-        key = cv2.waitKey(1) & 0xFF
-
-        if key == ord('s'):
-            self.run_detection()
-
-        if key == ord('q') and rclpy.ok():
-            rclpy.shutdown()
 
     def _sample_depth(self, u, v):
         """Median depth in metres around pixel (u, v), or None if untrustworthy."""
@@ -186,6 +227,7 @@ class YoloSnapshotNode(Node):
 
         if len(preds) == 0:
             print(f"No valid detections above threshold or matching target class '{self.target_class}'")
+            self.publish_frame(frame)
             return
 
         if self.depth.shape[:2] != frame.shape[:2]:
@@ -259,8 +301,7 @@ class YoloSnapshotNode(Node):
         cv2.putText(frame, "Multiple detections shown", (30,40),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,255), 2)
 
-        cv2.imshow("detection", frame)
-        cv2.waitKey(100)  # Force OpenCV to render the window before movement
+        self.publish_frame(frame)
 
         if valid_targets:
             self.target_positions = valid_targets
