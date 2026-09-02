@@ -112,8 +112,8 @@ class ArucoRealsenseTfNode(Node):
         self.declare_parameter("marker_frame_prefix", "aruco_marker_")
         self.declare_parameter("single_marker_frame_id", "aruco_marker")
 
-        self.declare_parameter("color_image_topic", "/camera/color/image_raw")
-        self.declare_parameter("camera_info_topic", "/camera/color/camera_info")
+        self.declare_parameter("color_image_topic", "/camera/camera/color/image_raw")
+        self.declare_parameter("camera_info_topic", "/camera/camera/color/camera_info")
 
         self.declare_parameter("pose_topic", "/aruco_single/pose")
         self.declare_parameter("publish_debug_image", True)
@@ -403,7 +403,8 @@ def main() -> None:
         pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":

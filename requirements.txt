@@ -3,8 +3,16 @@
 # rclpy interop libs) are compiled against the NumPy 1.x C API; NumPy 2.x
 # breaks cv_bridge at import time ("_ARRAY_API not found"). opencv-contrib-python
 # and inference-sdk are capped to versions that still support NumPy 1.x to match.
+#
+# opencv-contrib-python is pinned <4.12 because 4.12+ requires NumPy 2.x
+# (see above). Also: inference-sdk depends on the separate "opencv-python"
+# PyPI package, which pip will happily install alongside opencv-contrib-python
+# even though both ship a file at the same path (cv2/cv2.abi3.so) - whichever
+# installs second silently overwrites the other's binary. Never have both
+# installed; if `pip install` pulls in opencv-python, uninstall it and
+# reinstall opencv-contrib-python to restore a consistent cv2.
 numpy>=1.24,<2
-opencv-contrib-python>=4.8,<5
+opencv-contrib-python>=4.8,<4.12
 PyYAML>=6.0
 inference-sdk>=0.25,<=0.45.3
 scipy>=1.10
