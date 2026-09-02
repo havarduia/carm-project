@@ -6,7 +6,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from detection_model.yolo_model import YoloSnapshotNode
-from helpers.movement import MoveArm
+from helpers.movement import MIN_Z_MM, MoveArm
 
 
 class MockMoveArm:
@@ -21,12 +21,43 @@ class MockMoveArm:
         return True
 
     def move_to(self, x, y, z, speed=0.7):
+        if z < MIN_Z_MM:
+            print(f"[mock] REFUSED move_to z={z}, below the {MIN_Z_MM} mm table limit.")
+            return False
         print(f"[mock] move_to(x={x}, y={y}, z={z}, speed={speed})")
         return True
 
-    def place(self, x, z):
-        print(f"[mock] place(x={x}, z={z})")
-        return True
+
+# Vertical clearance, in mm, for approaching and retreating from a grasp. Must
+# clear the tallest component plus the gripper fingers.
+APPROACH_HEIGHT = 80
+
+# One drop-off bin per component type: (x, y, release z) in mm in link_base.
+# Release z is above the bin floor, so parts stack rather than being dragged
+# through each other. Tune all of these to the bins actually on the table.
+PLACE_BINS = {
+    "capacitor": (70.0, 220.6, 60.0),
+    "resistor": (170.0, 220.6, 60.0),
+    "transformer": (270.0, 220.6, 60.0),
+}
+# Anything the model reports that has no bin above.
+REJECT_BIN = (370.0, 220.6, 60.0)
+
+
+def order_targets(targets):
+    """Greedy nearest-neighbour ordering, starting from the base origin.
+
+    Targets are (x, y, z, class); only the coordinates decide the order.
+    """
+    remaining = list(targets)
+    path = []
+    curr = (0.0, 0.0, 0.0)
+    while remaining:
+        closest = min(remaining, key=lambda t: sum((a - b) ** 2 for a, b in zip(t[:3], curr)))
+        remaining.remove(closest)
+        path.append(closest)
+        curr = closest[:3]
+    return path
 
 
 def parse_args(argv=None):
@@ -41,8 +72,11 @@ def parse_args(argv=None):
     )
     parser.add_argument(
         "--target-class",
-        default="capacitor",
-        help='Target class to detect (e.g. "capacitor", "resistor", "transformer").',
+        default=None,
+        help=(
+            'Only pick this class (e.g. "capacitor", "resistor", "transformer"). '
+            "Default: pick every detected class, sorting each into its own bin."
+        ),
     )
     return parser.parse_args(argv)
 
@@ -65,41 +99,52 @@ def main(args=None):
     moveto.set_gripper(850)
     moveto.home()
 
-    current_place_x = 70  # Starting x coordinate for placement
-    step_size = 50       # Amount to increase x each cycle
-
     while cli_args.no_hardware or rclpy.ok():
         if cli_args.no_hardware:
-            targets = [(180.0, -25.0, 30.0), (210.0, 15.0, 32.0)]
+            targets = [
+                (180.0, -25.0, 30.0, "capacitor"),
+                (210.0, 15.0, 32.0, "resistor"),
+                (195.0, 40.0, 31.0, "widget"),
+                (170.0, 5.0, 6.0, "resistor"),  # low enough to hit the table clamp
+            ]
             print(f"[mock] using {len(targets)} synthetic target(s): {targets}")
         else:
             rclpy.spin_once(node, timeout_sec=0.1)
             if node.target_positions is None:
                 continue
-            targets = node.target_positions.copy()
+            targets = node.target_positions
 
-        path = []
-        curr = (0, 0, 0)
-        while targets:
-            closest = min(targets, key=lambda p: (p[0]-curr[0])**2 + (p[1]-curr[1])**2 + (p[2]-curr[2])**2)
-            targets.remove(closest)
-            path.append(closest)
-            curr = closest
+        for x, y, z, cls in order_targets(targets):
+            grasp_x = x + offset_x
+            grasp_z = z + offset_z
 
-        for x, y, z in path:
-            if z < 5:
-                print("Invalid target position detected, skipping...")
-                continue
-            print(f"Captured target in main: {x}, {y}, {z}")
+            # Reach as deep as the table limit allows rather than giving up on
+            # the component. move_to() still refuses anything below the floor.
+            if grasp_z < MIN_Z_MM:
+                print(
+                    f"Target z={z:.1f} mm would grasp at {grasp_z:.1f} mm, below the "
+                    f"{MIN_Z_MM} mm table limit. Clamping to {MIN_Z_MM} mm."
+                )
+                grasp_z = MIN_Z_MM
 
-            moveto.move_to(x + offset_x, y, z + offset_z)
+            print(f"Captured target in main: {x}, {y}, {z} ({cls})")
+
+            # Pick: settle above the component, drop straight down onto it,
+            # grip, then lift clear before travelling anywhere sideways.
+            moveto.move_to(grasp_x, y, grasp_z + APPROACH_HEIGHT)
+            moveto.move_to(grasp_x, y, grasp_z)
             moveto.set_gripper(0)
-            moveto.move_to(x + offset_x, y, z + offset_z + 80)
+            moveto.move_to(grasp_x, y, grasp_z + APPROACH_HEIGHT)
 
-            current_place_x += step_size
-            moveto.place(current_place_x, z=z + offset_z + 80)
-            moveto.place(current_place_x, z=z + offset_z)
+            bin_x, bin_y, bin_z = PLACE_BINS.get(cls.lower(), REJECT_BIN)
+            if cls.lower() not in PLACE_BINS:
+                print(f"No bin for class '{cls}', using the reject bin.")
+
+            # Place: travel high over the bin, lower, release, lift back clear.
+            moveto.move_to(bin_x, bin_y, bin_z + APPROACH_HEIGHT)
+            moveto.move_to(bin_x, bin_y, bin_z)
             moveto.set_gripper(850)
+            moveto.move_to(bin_x, bin_y, bin_z + APPROACH_HEIGHT)
             moveto.home()
 
         if cli_args.no_hardware:
@@ -110,7 +155,8 @@ def main(args=None):
 
     if not cli_args.no_hardware:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

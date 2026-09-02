@@ -15,6 +15,23 @@ from shape_msgs.msg import SolidPrimitive
 # (x, y, z, w) quaternion for that fixed orientation.
 DOWNWARD_ORIENTATION = (1.0, 0.0, 0.0, 0.0)
 
+# Measured table contact, in mm in link_base: the gripper was jogged down until
+# it touched the table and link_base -> link_tcp read z = -0.004 m. Re-measure
+# after any change to the table, the mount, or the gripper fingers.
+TABLE_CONTACT_Z_MM = -4.0
+
+# Clearance held above that contact point. Raise it if the gripper still grazes
+# the table; lower it if grasps on genuinely thin components get refused.
+TABLE_CLEARANCE_MM = 6.0
+
+# Hard floor for the TCP. Every move goes through move_to(), so this is the one
+# place the arm is stopped from being driven into the table.
+MIN_Z_MM = TABLE_CONTACT_Z_MM + TABLE_CLEARANCE_MM
+
+# Rest pose returned to between picks, (x, y, z) in mm in link_base. Held high
+# so the arm sits clear of the table and out of the camera's view of it.
+HOME_POSE_MM = (130.0, 0.0, 300.0)
+
 
 class MoveArm(Node):
     def __init__(self):
@@ -92,6 +109,8 @@ class MoveArm(Node):
     # Speed scaling
     # ==============================
     def scale_trajectory_speed(self, traj, scale):
+        if scale <= 0.0:
+            raise ValueError(f"speed scale must be > 0, got {scale}")
         for point in traj.joint_trajectory.points:
             t = point.time_from_start.sec + point.time_from_start.nanosec * 1e-9
             t_scaled = t / scale
@@ -115,6 +134,14 @@ class MoveArm(Node):
     # ==============================
     def move_to(self, x, y, z, speed=0.7):
         self.get_logger().info(f"Cartesian move to ({x}, {y}, {z})")
+
+        # Refused, not clamped: a silently raised grasp closes on nothing, which
+        # is a confusing failure. Below the floor means the target is wrong.
+        if z < MIN_Z_MM:
+            self.get_logger().error(
+                f"Refusing move to z={z} mm, below the {MIN_Z_MM} mm table limit."
+            )
+            return False
 
         pose = self.create_pose(x, y, z)
 
@@ -144,25 +171,28 @@ class MoveArm(Node):
         goal = ExecuteTrajectory.Goal()
         goal.trajectory = traj
 
-        future = self.execute_client.send_goal_async(goal)
-        rclpy.spin_until_future_complete(self, future)
-
-        goal_handle = future.result()
-        if not goal_handle.accepted:
-            self.get_logger().error("Execution rejected.")
+        if not self._send_goal(self.execute_client, goal, "Trajectory execution"):
             return False
-
-        result_future = goal_handle.get_result_async()
-        rclpy.spin_until_future_complete(self, result_future)
 
         self.get_logger().info("Move complete.")
         return True
 
-    def home(self):
-        return self.move_to(130, 0, 150, speed=0.7)
+    def _send_goal(self, client, goal, what):
+        """Send an action goal and block until it finishes. False if it never ran."""
+        future = client.send_goal_async(goal)
+        rclpy.spin_until_future_complete(self, future)
 
-    def place(self, x, z):
-        return self.move_to(x, 220.6, z, speed=0.7)
+        goal_handle = future.result()
+        if goal_handle is None or not goal_handle.accepted:
+            self.get_logger().error(f"{what} rejected.")
+            return False
+
+        result_future = goal_handle.get_result_async()
+        rclpy.spin_until_future_complete(self, result_future)
+        return True
+
+    def home(self):
+        return self.move_to(*HOME_POSE_MM, speed=0.7)
 
     # ==============================
     # Gripper
@@ -175,16 +205,8 @@ class MoveArm(Node):
         goal.command.position = (850.0 - float(pos)) / 1000.0
         goal.command.max_effort = -1.0
 
-        future = self.gripper_client.send_goal_async(goal)
-        rclpy.spin_until_future_complete(self, future)
-
-        goal_handle = future.result()
-        if not goal_handle.accepted:
-            self.get_logger().error("Gripper rejected")
+        if not self._send_goal(self.gripper_client, goal, "Gripper command"):
             return False
-
-        result_future = goal_handle.get_result_async()
-        rclpy.spin_until_future_complete(self, result_future)
 
         self.get_logger().info("Gripper done")
         return True

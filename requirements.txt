@@ -17,6 +17,9 @@ PyYAML>=6.0
 inference-sdk>=0.25,<=0.45.3
 scipy>=1.10
 
+# The Roboflow key is read from the ROBOFLOW_API_KEY environment variable at
+# runtime (see README) - do not hardcode it.
+#
 # ROS2 packages used by this project are typically installed through apt/rosdep,
 # not pip (examples: rclpy, cv_bridge, image_geometry, tf2_ros, sensor_msgs,
 # geometry_msgs, moveit_msgs, control_msgs, shape_msgs, launch, launch_ros,

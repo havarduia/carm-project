@@ -6,7 +6,7 @@ This repository contains an xArm pick-and-place workflow that integrates ROS2, a
 
 - `main/main.py` — The primary runtime script. Sets up the object detection node and commands the robot to perform the pick-and-place workflow using MoveIt.
 - `detection_model/yolo_model.py` — A ROS2 node that processes the RealSense camera feeds (RGB and aligned depth), queries the Roboflow YOLO endpoint, computes 3D points, and applies the static TF to output target coordinates in the robot base frame (`link_base`).
-- `helpers/movement.py` — Contains helper classes and functions wrapping MoveIt 2 Action Clients (`ExecuteTrajectory`) and `GripperCommand` to comfortably control the xArm motion and end-effector.
+- `helpers/movement.py` — Contains helper classes and functions wrapping MoveIt 2 Action Clients (`ExecuteTrajectory`) and `GripperCommand` to comfortably control the xArm motion and end-effector. All motion goes through `move_to(x, y, z)` in mm in `link_base`, with the gripper held pointing straight down.
 - `calibration/aruco_realsense_tf_node.py` — A utility ROS2 node for calculating the camera-to-robot base transform using ArUco markers.
 - `calibration/generate_aruco.py` — Generates printable ArUco markers and boards used for the camera calibration routine.
 
@@ -21,6 +21,18 @@ To run this workflow, you need the following installed in your ROS2 environment 
 - **Roboflow Inference SDK** (`inference_sdk`)
 - **OpenCV** Python package (`opencv-python`)
 - **cv_bridge** (e.g., `ros-humble-cv-bridge`)
+
+### Roboflow API key
+
+Detection calls the Roboflow serverless endpoint, which needs a key. It is read from
+the environment, never committed:
+
+```bash
+export ROBOFLOW_API_KEY=your_key_here
+```
+
+Without it, `main/main.py` exits with `KeyError: 'ROBOFLOW_API_KEY'` as soon as the
+detection node starts. `--no-hardware` does not need it.
 
 ## Required Launch Order
 
@@ -71,8 +83,19 @@ ros2 launch xarm_moveit_config xarm6_moveit_realmove.launch.py robot_ip:=192.168
 Once the camera is publishing, the TF is registered, and MoveIt is ready to accept trajectory commands, you can start the main pick-and-place routine.
 
 ```bash
-python3 main/main.py
+export ROBOFLOW_API_KEY=your_key_here
+python3 main/main.py                          # pick everything, sorted by type
+python3 main/main.py --target-class resistor  # pick resistors only
 ```
+
+Each pick approaches from `APPROACH_HEIGHT` mm above the component, lowers straight
+down, grips, and lifts clear before travelling — so the gripper never sweeps sideways
+at component height.
+
+Components are sorted by the class the model reports, one drop-off bin each. The bin
+positions are `PLACE_BINS` at the top of `main/main.py`, as `(x, y, release z)` in mm
+in `link_base`; a class with no bin goes to `REJECT_BIN`. Measure your actual bins and
+edit that table — the shipped values are placeholders.
 
 ### Optional: run without connected hardware
 
@@ -84,7 +107,59 @@ python3 main/main.py --no-hardware
 
 This mode avoids camera subscriptions and robot controllers by using synthetic detections and mocked arm/gripper commands.
 
-*Note: The script currently defaults to looking for a `capacitor` (or another manually configured target class inside `main.py`). The camera stream will display in an OpenCV window. By default, pressing `s` on the OpenCV window often triggers the detection snapshot.*
+*Note: `--target-class` narrows detection to a single class; by default every detected class is picked and sorted. The camera stream displays in an OpenCV window; press `s` there to take a detection snapshot, `q` to quit.*
+
+### Table limit
+
+`MIN_Z_MM` in `helpers/movement.py` is a hard floor on the TCP z, in mm in `link_base`.
+Every motion goes through `move_to()`, so nothing can be commanded below it — a move
+below the floor is **refused**, which makes the limit a hard backstop for every caller.
+
+The pick cycle in `main.py` clamps to the floor before it gets there: a component whose
+grasp would fall below the limit is picked at the limit instead of being skipped. The
+clamp is logged, and a part grasped at the floor may be gripped slightly high — if
+picks start slipping, that is the message to look for.
+
+It is derived from two constants, so re-measuring the table does not mean recomputing
+the margin by hand:
+
+```python
+TABLE_CONTACT_Z_MM = -4.0   # measured: gripper jogged down until it touched the table
+TABLE_CLEARANCE_MM = 6.0    # safety margin held above that
+MIN_Z_MM = TABLE_CONTACT_Z_MM + TABLE_CLEARANCE_MM   # 2.0
+```
+
+Re-measure the contact point whenever the table, the mount, or the gripper fingers
+change:
+
+```bash
+ros2 run tf2_ros tf2_echo link_base link_tcp
+```
+
+Note the interaction with `offset_z` in `main/main.py`, which pushes the grasp 10 mm
+below the detected top surface: with the floor at 2.0 mm, a component whose detected
+surface sits below **+12.0 mm** gets its grasp clamped to the floor. If thin parts are
+being gripped too high, that pairing is what to adjust — not the floor alone.
+
+### Detection tuning
+
+Constants at the top of `detection_model/yolo_model.py`:
+
+| Constant | Meaning |
+| --- | --- |
+| `CONF_THRESHOLD` | Minimum model confidence to act on a detection. |
+| `DEPTH_HALF_WINDOW` | Half-width of the median depth window. Keep it smaller than the smallest component, or the median reads the table and the grasp goes too deep. |
+| `MIN_DEPTH_SAMPLES` | Valid (non-zero) pixels required in that window. RealSense writes 0 where it measured nothing. |
+| `DEPTH_RANGE_M` | Plausible camera-to-table distance. Widen if the camera is remounted further away. |
+| `DUPLICATE_RADIUS_MM` | Targets closer than this are treated as one object — the SAHI workflow slices the frame and can report a part twice. |
+
+## Tests
+
+The pick-ordering logic has a self-check with no ROS or hardware needed:
+
+```bash
+python3 test_main.py
+```
 
 ## Camera calibration (hand-eye)
 
