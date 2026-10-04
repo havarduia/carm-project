@@ -16,7 +16,9 @@ from detection_model.yolo_model import (
     deproject,
     read_key,
 )
-from helpers.movement import MIN_Z_MM
+from helpers.grasp_yaw import choose_grasp_yaw, closing_axis
+from helpers.movement import MIN_Z_MM, downward_orientation
+from helpers.run_log import RunLog
 from main.main import MockMoveArm, order_targets
 
 
@@ -123,6 +125,86 @@ def test_z_floor():
     assert arm.move_to(200.0, 0.0, MIN_Z_MM - 0.1) is False
 
 
+def _floor_cloud():
+    """A flat floor at z = 0, one point per mm, 200 mm square around the origin."""
+    xs, ys = np.meshgrid(np.arange(-100.0, 100.0), np.arange(-100.0, 100.0))
+    return np.stack([xs.ravel(), ys.ravel(), np.zeros(xs.size)], axis=1)
+
+
+def _post(x, y, height):
+    """A 10 mm square post standing on the floor."""
+    xs, ys = np.meshgrid(np.arange(x - 5.0, x + 5.0), np.arange(y - 5.0, y + 5.0))
+    return np.stack([xs.ravel(), ys.ravel(), np.full(xs.size, height)], axis=1)
+
+
+def test_grasp_yaw():
+    import math
+
+    floor = _floor_cloud()
+
+    # Nothing around: the gripper is left unrotated.
+    assert choose_grasp_yaw(floor, 0.0, 0.0, 6.0, 40.0, 0.0) == 0.0
+
+    # At yaw 0 the fingers close along y, so a post 25 mm away in y sits under
+    # a finger and the gripper has to turn away from it.
+    cloud = np.vstack([floor, _post(0.0, 25.0, 30.0)])
+    yaw = choose_grasp_yaw(cloud, 0.0, 0.0, 6.0, 40.0, 0.0)
+    assert yaw is not None and abs(math.degrees(yaw)) >= 45, yaw
+
+    # The same post 25 mm away in x is beside the fingers, not under them.
+    cloud = np.vstack([floor, _post(25.0, 0.0, 30.0)])
+    assert choose_grasp_yaw(cloud, 0.0, 0.0, 6.0, 40.0, 0.0) == 0.0
+
+    # A post lower than the fingertips will go is no obstacle.
+    cloud = np.vstack([floor, _post(0.0, 25.0, 2.0)])
+    assert choose_grasp_yaw(cloud, 0.0, 0.0, 6.0, 40.0, 0.0) == 0.0
+
+    # A camera that reads the whole scene 10 mm high must not see the floor
+    # as an obstacle: heights are taken from the floor it sees.
+    assert choose_grasp_yaw(floor + (0.0, 0.0, 10.0), 0.0, 0.0, 6.0, 40.0, 0.0) == 0.0
+
+    # Ringed by posts on every side, and with no depth at all: no free yaw.
+    ring = [_post(25.0 * math.cos(a), 25.0 * math.sin(a), 30.0)
+            for a in np.arange(0.0, 2 * math.pi, math.pi / 8)]
+    assert choose_grasp_yaw(np.vstack([floor] + ring), 0.0, 0.0, 6.0, 40.0, 0.0) is None
+    assert choose_grasp_yaw(np.zeros((0, 3)), 0.0, 0.0, 6.0, 40.0, 0.0) is None
+
+
+def test_downward_orientation():
+    import math
+
+    def rotate(q, v):
+        x, y, z, w = q
+        u = np.array([x, y, z])
+        return v + 2 * np.cross(u, np.cross(u, v) + w * v)
+
+    for deg in (0, 30, -45, 90):
+        q = downward_orientation(math.radians(deg))
+        # The tool Z axis (the approach direction) always points straight down.
+        assert np.allclose(rotate(q, np.array([0.0, 0.0, 1.0])), [0, 0, -1])
+        # The tool Y axis is the one the fingers close along; it must match
+        # what the free-space check assumes, up to sign.
+        tool_y = rotate(q, np.array([0.0, 1.0, 0.0]))
+        cx, cy = closing_axis(math.radians(deg))
+        assert np.allclose(np.abs(tool_y[:2] @ (cx, cy)), 1.0) and abs(tool_y[2]) < 1e-9
+
+
+def test_run_log():
+    import csv
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as root:
+        log = RunLog(root)
+        log.write("picks", {"attempt": 1, "outcome": "placed"})
+        log.write("picks", {"attempt": 2, "outcome": "no_free_yaw"})
+        # Rows are on disk as soon as they are written, not only at close().
+        with open(os.path.join(log.dir, "picks.csv")) as f:
+            rows = list(csv.DictReader(f))
+        assert rows == [{"attempt": "1", "outcome": "placed"},
+                        {"attempt": "2", "outcome": "no_free_yaw"}], rows
+        log.close()
+
+
 if __name__ == "__main__":
     test_order_targets()
     test_deproject()
@@ -130,4 +212,7 @@ if __name__ == "__main__":
     test_bbox_extent()
     test_read_key()
     test_z_floor()
+    test_grasp_yaw()
+    test_downward_orientation()
+    test_run_log()
     print("ok")

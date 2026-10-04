@@ -2,10 +2,10 @@
 # numpy is pinned <2 because ROS2 Humble's apt-installed cv_bridge (and other
 # rclpy interop libs) are compiled against the NumPy 1.x C API; NumPy 2.x
 # breaks cv_bridge at import time ("_ARRAY_API not found"). opencv-contrib-python
-# and inference-sdk are capped to versions that still support NumPy 1.x to match.
+# is capped to a version that still supports NumPy 1.x to match.
 #
 # opencv-contrib-python is pinned <4.12 because 4.12+ requires NumPy 2.x
-# (see above). Also: inference-sdk depends on the separate "opencv-python"
+# (see above). Also: ultralytics depends on the separate "opencv-python"
 # PyPI package, which pip will happily install alongside opencv-contrib-python
 # even though both ship a file at the same path (cv2/cv2.abi3.so) - whichever
 # installs second silently overwrites the other's binary. Never have both
@@ -14,12 +14,13 @@
 numpy>=1.24,<2
 opencv-contrib-python>=4.8,<4.12
 PyYAML>=6.0
-inference-sdk>=0.25,<=0.45.3
+# torch/torchvision: install from https://download.pytorch.org/whl/cu128 first
+# (the RTX 50-series needs a CUDA 12.8 build) - see README "Detection model".
+torch
+torchvision
+ultralytics>=8.4
 scipy>=1.10
 
-# The Roboflow key is read from the ROBOFLOW_API_KEY environment variable at
-# runtime (see README) - do not hardcode it.
-#
 # ROS2 packages used by this project are typically installed through apt/rosdep,
 # not pip (examples: rclpy, cv_bridge, image_geometry, tf2_ros, sensor_msgs,
 # geometry_msgs, moveit_msgs, control_msgs, shape_msgs, launch, launch_ros,

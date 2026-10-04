@@ -25,9 +25,18 @@ import sys
 import termios
 import tty
 
-from inference_sdk import InferenceHTTPClient
+from ultralytics import YOLO
 
 
+# YOLO26s trained in model_training/ (run yolo26s_v9_1280), see its README.
+MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          'weights', 'yolo26s_v9_1280.pt')
+
+# The model was trained on frames fit within 1280 px, so infer at that size on
+# the whole frame - no tiling needed.
+MODEL_IMGSZ = 1280
+
+# Best F1 on the test split is at 0.50 for this model.
 CONF_THRESHOLD = 0.50
 
 # Half-width in px of the median window sampled around a detection centre. Kept
@@ -43,8 +52,8 @@ MIN_DEPTH_SAMPLES = 5
 # not a component. Widen if the camera is remounted further away.
 DEPTH_RANGE_M = (0.15, 1.5)
 
-# SAHI slices the frame, so one component near a tile seam can be reported
-# twice. Targets closer together than this (mm) are the same object.
+# Guard against one part being reported twice. Targets closer together than
+# this (mm) are treated as the same object.
 DUPLICATE_RADIUS_MM = 8.0
 
 # Annotated snapshot, for an RViz2 Image display.
@@ -77,6 +86,23 @@ def read_key():
     if not select.select([sys.stdin], [], [], 0)[0]:
         return None
     return sys.stdin.read(1)
+
+
+def read_line(prompt):
+    """A full typed line, with echo, from the cbreak terminal. None if not a tty."""
+    if not sys.stdin.isatty():
+        return None
+    fd = sys.stdin.fileno()
+    cbreak = termios.tcgetattr(fd)
+    cooked = termios.tcgetattr(fd)
+    cooked[3] |= termios.ICANON | termios.ECHO
+    # Keys pressed while the arm was moving are not an answer.
+    termios.tcflush(fd, termios.TCIFLUSH)
+    termios.tcsetattr(fd, termios.TCSADRAIN, cooked)
+    try:
+        return input(prompt)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, cbreak)
 
 
 def deproject(camera_model, u, v, depth_m):
@@ -164,10 +190,11 @@ class YoloSnapshotNode(Node):
             10
         )
 
-        self.client = InferenceHTTPClient(
-            api_url="https://serverless.roboflow.com",
-            api_key=os.environ["ROBOFLOW_API_KEY"],
-        )
+        # Loaded once and warmed up here, so the first 's' press is not the
+        # one that pays for CUDA initialisation.
+        self.model = YOLO(MODEL_PATH)
+        self.model.predict(np.zeros((720, 1280, 3), np.uint8),
+                           imgsz=MODEL_IMGSZ, verbose=False)
 
         self.image_pub = self.create_publisher(Image, DETECTION_IMAGE_TOPIC, 1)
 
@@ -180,6 +207,15 @@ class YoloSnapshotNode(Node):
         )
 
         self.target_positions = None
+
+        # Depth points of the last snapshot, (N, 3) mm in link_base. main.py
+        # checks them for free space around each grasp.
+        self.cloud_mm = None
+
+        # Set by every snapshot, also one that finds nothing: the raw and
+        # annotated frames, how many boxes passed the filter ('detected') and
+        # the targets that also got a position ('targets'). main.py logs it.
+        self.snapshot = None
 
         cbreak_stdin()
         self.create_timer(0.1, self.poll_key)
@@ -270,6 +306,32 @@ class YoloSnapshotNode(Node):
             return None
         return Z
 
+    def _snapshot_cloud(self):
+        """Every usable depth pixel as (N, 3) mm in link_base, or None without TF."""
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                "link_base", "camera_color_optical_frame", rclpy.time.Time(),
+                timeout=rclpy.duration.Duration(seconds=1.0)
+            ).transform
+        except Exception as e:
+            print("TF lookup for the depth cloud failed:", e)
+            return None
+
+        z = self.depth.astype(np.float32) / 1000.0
+        v, u = np.nonzero((z >= DEPTH_RANGE_M[0]) & (z <= DEPTH_RANGE_M[1]))
+        z = z[v, u]
+        m = self.camera_model
+        points = np.stack(
+            [(u - m.cx()) / m.fx() * z, (v - m.cy()) / m.fy() * z, z], axis=1)
+
+        q, t = tf.rotation, tf.translation
+        rotation = np.array([
+            [1 - 2 * (q.y**2 + q.z**2), 2 * (q.x*q.y - q.z*q.w), 2 * (q.x*q.z + q.y*q.w)],
+            [2 * (q.x*q.y + q.z*q.w), 1 - 2 * (q.x**2 + q.z**2), 2 * (q.y*q.z - q.x*q.w)],
+            [2 * (q.x*q.z - q.y*q.w), 2 * (q.y*q.z + q.x*q.w), 1 - 2 * (q.x**2 + q.y**2)],
+        ])
+        return (points @ rotation.T + (t.x, t.y, t.z)) * 1000.0
+
     def run_detection(self):
 
         if self.frame is None or self.depth is None:
@@ -285,15 +347,26 @@ class YoloSnapshotNode(Node):
             return
 
         frame = self.frame.copy()
+        raw = frame.copy()
 
-        result = self.client.run_workflow(
-            workspace_name="carm-yitb6",
-            workflow_id="small-object-detection-sahi-4",
-            images={"image": frame},
-            use_cache=True
-        )
+        result = self.model.predict(frame, imgsz=MODEL_IMGSZ,
+                                    conf=CONF_THRESHOLD, verbose=False)[0]
 
-        preds = result[0]['predictions']['predictions']
+        # Same dict shape the Roboflow API returned (centre x/y, width/height
+        # in pixels), so everything below is unchanged.
+        preds = [
+            {
+                'x': float(cx), 'y': float(cy),
+                'width': float(w), 'height': float(h),
+                'class': result.names[int(c)],
+                'confidence': float(conf),
+            }
+            for (cx, cy, w, h), c, conf in zip(
+                result.boxes.xywh.tolist(),
+                result.boxes.cls.tolist(),
+                result.boxes.conf.tolist(),
+            )
+        ]
 
         # Every class the model reported, so you can see what it actually
         # produces and give each one a bin in main.py's PLACE_BINS.
@@ -311,6 +384,7 @@ class YoloSnapshotNode(Node):
             print(f"No valid detections above threshold or matching target class '{self.target_class}'")
             self.publish_frame(frame)
             self.publish_boxes([])
+            self.snapshot = {'raw': raw, 'annotated': frame, 'detected': 0, 'targets': []}
             return
 
         if self.depth.shape[:2] != frame.shape[:2]:
@@ -319,6 +393,8 @@ class YoloSnapshotNode(Node):
                 "Relaunch the RealSense driver with align_depth.enable:=true"
             )
             return
+
+        self.cloud_mm = self._snapshot_cloud()
 
         valid_targets = []
 
@@ -386,6 +462,9 @@ class YoloSnapshotNode(Node):
 
         self.publish_frame(frame)
         self.publish_boxes(preds)
+
+        self.snapshot = {'raw': raw, 'annotated': frame,
+                         'detected': len(preds), 'targets': valid_targets}
 
         if valid_targets:
             self.target_positions = valid_targets

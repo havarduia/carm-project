@@ -1,3 +1,4 @@
+import math
 import time
 import rclpy
 from rclpy.node import Node
@@ -8,12 +9,19 @@ from control_msgs.action import GripperCommand
 from moveit_msgs.action import ExecuteTrajectory
 from moveit_msgs.srv import GetCartesianPath
 
-from moveit_msgs.msg import PlanningScene, CollisionObject
+from moveit_msgs.msg import PlanningScene, CollisionObject, MoveItErrorCodes
 from shape_msgs.msg import SolidPrimitive
 
-# The gripper always approaches straight down: 180 deg roll about X.
-# (x, y, z, w) quaternion for that fixed orientation.
-DOWNWARD_ORIENTATION = (1.0, 0.0, 0.0, 0.0)
+
+
+def downward_orientation(yaw=0.0):
+    """(x, y, z, w) quaternion for the gripper pointing straight down.
+
+    That is a 180 deg roll about X, then `yaw` radians about the vertical. At
+    yaw 0 the fingers close along link_base Y (see helpers/grasp_yaw.py).
+    """
+    return (math.cos(yaw / 2.0), math.sin(yaw / 2.0), 0.0, 0.0)
+
 
 # Measured table contact, in mm in link_base: the gripper was jogged down until
 # it touched the table and link_base -> link_tcp read z = -0.004 m. Re-measure
@@ -22,11 +30,18 @@ TABLE_CONTACT_Z_MM = -4.0
 
 # Clearance held above that contact point. Raise it if the gripper still grazes
 # the table; lower it if grasps on genuinely thin components get refused.
-TABLE_CLEARANCE_MM = 6.0
+# 10 mm since 2026-10-04: at 6 mm the fingertips all but touched a PCB lying on
+# the table, whose solder joints stand a few mm above the table itself.
+TABLE_CLEARANCE_MM = 10.0
 
 # Hard floor for the TCP. Every move goes through move_to(), so this is the one
 # place the arm is stopped from being driven into the table.
 MIN_Z_MM = TABLE_CONTACT_Z_MM + TABLE_CLEARANCE_MM
+
+# Speed of every move, as a fraction of the speed MoveIt plans at. 0.3 is the
+# speed the single-pick tests of 2026-10-04 ran at (about 27 s per cycle);
+# 0.7 was too fast on the rig.
+DEFAULT_SPEED = 0.3
 
 # Rest pose returned to between picks, (x, y, z) in mm in link_base. Held high
 # so the arm sits clear of the table and out of the camera's view of it.
@@ -36,6 +51,11 @@ HOME_POSE_MM = (130.0, 0.0, 300.0)
 class MoveArm(Node):
     def __init__(self):
         super().__init__("move_arm_node")
+
+        # Finger opening in mm reported after the last gripper command. After a
+        # grip this is the width of what is held; near 0 means it closed on
+        # nothing.
+        self.gripper_width_mm = None
 
         self.get_logger().info("Waiting for services and action servers...")
 
@@ -89,9 +109,9 @@ class MoveArm(Node):
         self.get_logger().info(f"{object_id} added.")
 
     # ==============================
-    # Pose (fixed downward)
+    # Pose (pointing down, rotated by yaw)
     # ==============================
-    def create_pose(self, x, y, z):
+    def create_pose(self, x, y, z, yaw=0.0):
         pose = PoseStamped()
         pose.header.frame_id = "link_base"
         pose.header.stamp = self.get_clock().now().to_msg()
@@ -101,7 +121,7 @@ class MoveArm(Node):
         pose.pose.position.z = z / 1000.0
 
         (pose.pose.orientation.x, pose.pose.orientation.y,
-         pose.pose.orientation.z, pose.pose.orientation.w) = DOWNWARD_ORIENTATION
+         pose.pose.orientation.z, pose.pose.orientation.w) = downward_orientation(yaw)
 
         return pose
 
@@ -132,8 +152,9 @@ class MoveArm(Node):
     # ==============================
     # Cartesian move
     # ==============================
-    def move_to(self, x, y, z, speed=0.7):
-        self.get_logger().info(f"Cartesian move to ({x}, {y}, {z})")
+    def move_to(self, x, y, z, speed=DEFAULT_SPEED, yaw=0.0):
+        self.get_logger().info(
+            f"Cartesian move to ({x}, {y}, {z}), yaw {math.degrees(yaw):.0f} deg")
 
         # Refused, not clamped: a silently raised grasp closes on nothing, which
         # is a confusing failure. Below the floor means the target is wrong.
@@ -143,7 +164,7 @@ class MoveArm(Node):
             )
             return False
 
-        pose = self.create_pose(x, y, z)
+        pose = self.create_pose(x, y, z, yaw)
 
         req = GetCartesianPath.Request()
         req.group_name = "xarm6"
@@ -171,28 +192,39 @@ class MoveArm(Node):
         goal = ExecuteTrajectory.Goal()
         goal.trajectory = traj
 
-        if not self._send_goal(self.execute_client, goal, "Trajectory execution"):
+        result = self._send_goal(self.execute_client, goal, "Trajectory execution")
+        if result is None:
+            return False
+
+        # An accepted goal can still fail to run - e.g. the trajectory
+        # controller is inactive after the arm was put in manual mode.
+        code = result.error_code.val
+        if code != MoveItErrorCodes.SUCCESS:
+            self.get_logger().error(f"Trajectory execution failed (MoveIt error {code}).")
             return False
 
         self.get_logger().info("Move complete.")
         return True
 
     def _send_goal(self, client, goal, what):
-        """Send an action goal and block until it finishes. False if it never ran."""
+        """Send an action goal and block until it finishes.
+
+        Returns the action result, or None if the goal never ran.
+        """
         future = client.send_goal_async(goal)
         rclpy.spin_until_future_complete(self, future)
 
         goal_handle = future.result()
         if goal_handle is None or not goal_handle.accepted:
             self.get_logger().error(f"{what} rejected.")
-            return False
+            return None
 
         result_future = goal_handle.get_result_async()
         rclpy.spin_until_future_complete(self, result_future)
-        return True
+        return result_future.result().result
 
     def home(self):
-        return self.move_to(*HOME_POSE_MM, speed=0.7)
+        return self.move_to(*HOME_POSE_MM)
 
     # ==============================
     # Gripper
@@ -205,8 +237,10 @@ class MoveArm(Node):
         goal.command.position = (850.0 - float(pos)) / 1000.0
         goal.command.max_effort = -1.0
 
-        if not self._send_goal(self.gripper_client, goal, "Gripper command"):
+        result = self._send_goal(self.gripper_client, goal, "Gripper command")
+        if result is None:
             return False
+        self.gripper_width_mm = (850.0 - result.position * 1000.0) / 10.0
 
         self.get_logger().info("Gripper done")
         return True

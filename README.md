@@ -1,11 +1,11 @@
 # carm-project
 
-This repository contains an xArm pick-and-place workflow that integrates ROS2, an Intel RealSense camera, Roboflow-hosted YOLO inference, and MoveIt 2 for robot motion planning and execution. The system detects objects using YOLO, transforms the 2D coordinates to 3D using RealSense depth data, applies a static TF to find the object's position in the robot's base frame, and then commands the xArm to execute the pick.
+This repository contains an xArm pick-and-place workflow that integrates ROS2, an Intel RealSense camera, a locally-run YOLO26 detector, and MoveIt 2 for robot motion planning and execution. The system detects objects using YOLO, transforms the 2D coordinates to 3D using RealSense depth data, applies a static TF to find the object's position in the robot's base frame, and then commands the xArm to execute the pick.
 
 ## Repository layout
 
 - `main/main.py` — The primary runtime script. Sets up the object detection node and commands the robot to perform the pick-and-place workflow using MoveIt.
-- `detection_model/yolo_model.py` — A ROS2 node that processes the RealSense camera feeds (RGB and aligned depth), queries the Roboflow YOLO endpoint, computes 3D points, and applies the static TF to output target coordinates in the robot base frame (`link_base`).
+- `detection_model/yolo_model.py` — A ROS2 node that processes the RealSense camera feeds (RGB and aligned depth), runs the YOLO26 model (`detection_model/weights/yolo26s_v9_1280.pt`) on the GPU, computes 3D points, and applies the static TF to output target coordinates in the robot base frame (`link_base`).
 - `helpers/movement.py` — Contains helper classes and functions wrapping MoveIt 2 Action Clients (`ExecuteTrajectory`) and `GripperCommand` to comfortably control the xArm motion and end-effector. All motion goes through `move_to(x, y, z)` in mm in `link_base`, with the gripper held pointing straight down.
 - `calibration/aruco_realsense_tf_node.py` — A utility ROS2 node for calculating the camera-to-robot base transform using ArUco markers.
 - `calibration/generate_aruco.py` — Generates printable ArUco markers and boards used for the camera calibration routine.
@@ -18,21 +18,28 @@ To run this workflow, you need the following installed in your ROS2 environment 
 - **librealsense2** and **realsense-ros**
 - **xArm ROS2 packages** (specifically `xarm_moveit_config`)
 - **MoveIt 2**
-- **Roboflow Inference SDK** (`inference_sdk`)
+- **PyTorch** (CUDA 12.8 build for the RTX 50-series) and **Ultralytics** (`ultralytics`)
 - **OpenCV** Python package (`opencv-python`)
 - **cv_bridge** (e.g., `ros-humble-cv-bridge`)
 
-### Roboflow API key
+### Detection model
 
-Detection calls the Roboflow serverless endpoint, which needs a key. It is read from
-the environment, never committed:
+Detection runs locally on the GPU; no network or API key is needed. The weights are
+`detection_model/weights/yolo26s_v9_1280.pt`, a YOLO26s trained in
+[`model_training/`](model_training/README.md) (test mAP@50 0.84). To use a newly
+trained model, copy its `best.pt` over that file or change `MODEL_PATH` in
+`detection_model/yolo_model.py`.
+
+Install the model's dependencies into the repo venv without disturbing the NumPy 1.x
+pin (see `requirements.txt`):
 
 ```bash
-export ROBOFLOW_API_KEY=your_key_here
+.venv/bin/pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+.venv/bin/pip install ultralytics -c <(echo 'numpy==1.26.4')
+# ultralytics pulls in opencv-python, which clobbers opencv-contrib-python:
+.venv/bin/pip uninstall -y opencv-python
+.venv/bin/pip install --force-reinstall --no-deps 'opencv-contrib-python>=4.8,<4.12'
 ```
-
-Without it, `main/main.py` exits with `KeyError: 'ROBOFLOW_API_KEY'` as soon as the
-detection node starts. `--no-hardware` does not need it.
 
 ## Required Launch Order
 
@@ -83,7 +90,6 @@ ros2 launch xarm_moveit_config xarm6_moveit_realmove.launch.py robot_ip:=192.168
 Once the camera is publishing, the TF is registered, and MoveIt is ready to accept trajectory commands, you can start the main pick-and-place routine.
 
 ```bash
-export ROBOFLOW_API_KEY=your_key_here
 python3 main/main.py                          # pick everything, sorted by type
 python3 main/main.py --target-class resistor  # pick resistors only
 ```
@@ -140,8 +146,8 @@ the margin by hand:
 
 ```python
 TABLE_CONTACT_Z_MM = -4.0   # measured: gripper jogged down until it touched the table
-TABLE_CLEARANCE_MM = 6.0    # safety margin held above that
-MIN_Z_MM = TABLE_CONTACT_Z_MM + TABLE_CLEARANCE_MM   # 2.0
+TABLE_CLEARANCE_MM = 10.0   # safety margin held above that
+MIN_Z_MM = TABLE_CONTACT_Z_MM + TABLE_CLEARANCE_MM   # 6.0
 ```
 
 Re-measure the contact point whenever the table, the mount, or the gripper fingers
@@ -166,7 +172,8 @@ Constants at the top of `detection_model/yolo_model.py`:
 | `DEPTH_HALF_WINDOW` | Half-width of the median depth window. Keep it smaller than the smallest component, or the median reads the table and the grasp goes too deep. |
 | `MIN_DEPTH_SAMPLES` | Valid (non-zero) pixels required in that window. RealSense writes 0 where it measured nothing. |
 | `DEPTH_RANGE_M` | Plausible camera-to-table distance. Widen if the camera is remounted further away. |
-| `DUPLICATE_RADIUS_MM` | Targets closer than this are treated as one object — the SAHI workflow slices the frame and can report a part twice. |
+| `DUPLICATE_RADIUS_MM` | Targets closer than this are treated as one object, in case one part is reported twice. |
+| `MODEL_PATH`, `MODEL_IMGSZ` | Weights file and inference size (1280, matching training). |
 
 ## Tests
 
