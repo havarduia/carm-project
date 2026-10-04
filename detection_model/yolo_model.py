@@ -28,7 +28,7 @@ import tty
 from inference_sdk import InferenceHTTPClient
 
 
-CONF_THRESHOLD = 0.60
+CONF_THRESHOLD = 0.50
 
 # Half-width in px of the median window sampled around a detection centre. Kept
 # small and central so it reads the top face of the component, not the table
