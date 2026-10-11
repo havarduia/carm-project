@@ -1,0 +1,7 @@
+split,source,image_files,distinct_images,capacitor,resistor,transformer
+train,own photos,321,107,2020,51,153
+train,public PCB dataset,1296,1296,4832,1154,2547
+val,own photos,30,30,762,7,52
+val,public PCB dataset,0,0,0,0,0
+test,own photos,15,15,253,8,29
+test,public PCB dataset,0,0,0,0,0

@@ -1,0 +1,5 @@
+predicted \ labelled,capacitor,resistor,transformer,background
+capacitor,224,0,0,39
+resistor,1,7,0,1
+transformer,0,0,23,7
+background,28,1,6,0
