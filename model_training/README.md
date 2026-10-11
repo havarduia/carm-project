@@ -32,8 +32,8 @@ python3 -m venv .venv
 .venv/bin/pip install ultralytics
 
 # 3. Build datasets/combined_v9/, then train and test
-python3 prepare_data.py --ours carm_v9 --out combined_v9 --repeat 3
-.venv/bin/python train.py --data combined_v9 --name yolo26s_v9_1280 --imgsz 1280 --batch 8
+python3 prepare_data.py       # carm_v9 + pcb_ninja -> combined_v9, our train photos x3
+.venv/bin/python train.py     # combined_v9, image size 1280, batch 8 -> runs/yolo26s_v9_1280
 ```
 
 The run takes about 55 minutes on an RTX 5070 and writes `runs/yolo26s_v9_1280/`:

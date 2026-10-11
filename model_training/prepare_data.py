@@ -1,11 +1,10 @@
-"""Build datasets/combined/ from our Roboflow export + the public PCB dataset.
+"""Build datasets/combined_v9/ from our Roboflow export + the public PCB dataset.
 
-Our data (carm_v8, Roboflow YOLO export):
-  The v8 export holds 140 train sources x 3 augmented copies, plus 10 valid and
-  2 test images. That split is too small to measure anything, so it is redone
-  here by *source image*: every augmented copy of a source stays in the same
-  split, otherwise near-identical images would leak from train into val/test.
-  Val/test keep one copy per source.
+Our data (carm_v9, Roboflow YOLO export):
+  152 photos, fit within 1280 px, no augmentation. Roboflow's own split is
+  ignored and redone here by *source image*, stratified so that the few photos
+  with resistors reach validation and test. Our training photos are written
+  REPEAT times, to hold their share of the mix against the public set.
 
 Public data (pcb_ninja, Supervisely JSON, CC0):
   PCB Component Detection, 1,410 top-down PCB photos. All of it goes into
@@ -25,10 +24,10 @@ from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent / "datasets"
-OURS = ROOT / "carm_v8"
+OURS = ROOT / "carm_v9"
 PUBLIC = ROOT / "pcb_ninja"
-OUT = ROOT / "combined"
-REPEAT = 1
+OUT = ROOT / "combined_v9"
+REPEAT = 3
 
 NAMES = ["capacitor", "resistor", "transformer"]
 PUBLIC_MAP = {
@@ -43,7 +42,7 @@ SEED = 0
 
 
 def source_of(path):
-    """'12_png.rf.<hash>.jpg' -> '12_png': every augmented copy shares this."""
+    """'12_png.rf.<hash>.jpg' -> '12_png': the photo a file was exported from."""
     return re.sub(r"\.rf\.[0-9a-f]+$", "", path.stem)
 
 
@@ -61,8 +60,7 @@ def to_box_row(line):
         xs, ys = [cx - w / 2, cx + w / 2], [cy - h / 2, cy + h / 2]
     else:
         xs, ys = vals[0::2], vals[1::2]
-    # Roboflow's rotation augmentation leaves some points up to ~3% outside
-    # the frame, which Ultralytics rejects. Clip to the image.
+    # Ultralytics rejects points outside the frame. Clip to the image.
     x1, x2 = max(0.0, min(xs)), min(1.0, max(xs))
     y1, y2 = max(0.0, min(ys)), min(1.0, max(ys))
     return f"{cls} {(x1 + x2) / 2:.6f} {(y1 + y2) / 2:.6f} {x2 - x1:.6f} {y2 - y1:.6f}"
@@ -101,8 +99,8 @@ def split_ours():
     counts = defaultdict(lambda: [0, 0])
     for src, imgs in groups.items():
         split = assign[src]
-        # Train keeps every augmented copy (x REPEAT, to hold our share of the
-        # mix against the public set); val/test one copy per source.
+        # Train photos are written REPEAT times, to hold our share of the mix
+        # against the public set; val/test once.
         for img in (imgs if split == "train" else imgs[:1]):
             label = img.parent.parent / "labels" / f"{img.stem}.txt"
             for r in range(REPEAT if split == "train" else 1):
@@ -144,10 +142,10 @@ def convert_public():
 def main():
     global OURS, OUT, REPEAT
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--ours", default="carm_v8", help="our Roboflow export, under datasets/")
-    parser.add_argument("--out", default="combined", help="output folder, under datasets/")
-    parser.add_argument("--repeat", type=int, default=1,
-                        help="copies of each of our train images (use 3 for an unaugmented export)")
+    parser.add_argument("--ours", default=OURS.name, help="our Roboflow export, under datasets/")
+    parser.add_argument("--out", default=OUT.name, help="output folder, under datasets/")
+    parser.add_argument("--repeat", type=int, default=REPEAT,
+                        help="copies of each of our train images")
     args = parser.parse_args()
     OURS, OUT, REPEAT = ROOT / args.ours, ROOT / args.out, args.repeat
 

@@ -1,4 +1,4 @@
-"""Train YOLO26s on datasets/combined and score it on our held-out test images.
+"""Train YOLO26s on datasets/combined_v9 and score it on our held-out test images.
 
 Run prepare_data.py first. Results land in runs/<NAME>/: weights/best.pt,
 results.csv (per-epoch metrics), the PR / confusion-matrix plots, and
@@ -15,11 +15,11 @@ HERE = Path(__file__).resolve().parent
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--data", default="combined", help="dataset folder under datasets/")
-    parser.add_argument("--name", default="yolo26s_combined", help="run name under runs/")
-    # v8 export was stretched to 640 x 640; v9 is fit within 1280.
-    parser.add_argument("--imgsz", type=int, default=640)
-    parser.add_argument("--batch", type=int, default=16)
+    parser.add_argument("--data", default="combined_v9", help="dataset folder under datasets/")
+    parser.add_argument("--name", default="yolo26s_v9_1280", help="run name under runs/")
+    # Our photos are exported fit within 1280 px. Batch 8 fills a 12 GB card at that size.
+    parser.add_argument("--imgsz", type=int, default=1280)
+    parser.add_argument("--batch", type=int, default=8)
     parser.add_argument("--model", default="yolo26s.pt",
                         help="weights, or a model yaml (e.g. yolo26s-p2.yaml) started from yolo26s.pt")
     args = parser.parse_args()
