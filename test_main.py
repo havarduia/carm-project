@@ -298,6 +298,12 @@ def test_finger_opening():
     assert clamps_neighbour(0.0, 0.0, 30.0, 0.0, [(18.0, 0.0, 5.0)])
     assert not clamps_neighbour(0.0, 0.0, 30.0, 0.0, [(40.0, 0.0, 5.0)])
     assert not clamps_neighbour(0.0, 0.0, 30.0, 0.0, [])
+    # A short neighbour is no obstacle to fingers that stop above its top:
+    # a tall part is gripped over a short one standing right against it.
+    short = [(13.0, 0.0, 4.5, 22.0)]
+    assert clamps_neighbour(0.0, 0.0, 35.0, 0.0, short, tip_z=7.0)
+    assert not clamps_neighbour(0.0, 0.0, 35.0, 0.0, short, tip_z=29.0)
+    assert clamps_neighbour(0.0, 0.0, 35.0, 0.0, short, tip_z=23.0)
     yaw = choose_grasp_yaw(floor, 0.0, 0.0, 6.0, 30.0, 0.0, [(40.0, 0.0, 5.0)])
     assert yaw == 0.0, yaw
     assert choose_grasp(floor, 0.0, 0.0, 6.0, 10.0, [(18.0, 0.0, 5.0)]) is None

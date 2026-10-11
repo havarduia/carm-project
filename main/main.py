@@ -146,7 +146,7 @@ def choose_grasp(cloud_mm, x, y, z, width_mm, neighbours=()):
     """(opening, yaw) for a grasp at (x, y, z): the narrowest opening, from
     the part's own width upwards, at which some yaw brings the fingers down
     on free space and catches none of `neighbours`, the other detected parts
-    as (x, y, radius). None if nothing fits. Without a cloud nothing is
+    as (x, y, radius, top z). None if nothing fits. Without a cloud nothing is
     checked."""
     first = finger_opening(width_mm)
     if cloud_mm is None:
@@ -309,18 +309,23 @@ def main(args=None):
         return target, part_top(node.cloud_mm, (x, y, z), size[0] / 2.0, node.camera_xy_mm)
 
     def neighbours_of(xy, located_parts):
-        """Every other detected part as (x, y, radius), where the camera sees it."""
+        """Every other detected part as (x, y, radius, top z), where the camera
+        sees it. The top is None where it was not found."""
         others = []
         for (x, y, _, _, *size), top in located_parts:
             if (x, y) == xy or not size:
                 continue
-            nx, ny = (x, y) if top is None else top[:2]
-            others.append((nx, ny, BOX_TO_PART_WIDTH * size[0] / 2.0))
+            nx, ny, top_z = (x, y, None) if top is None else top
+            others.append((nx, ny, BOX_TO_PART_WIDTH * size[0] / 2.0, top_z))
         return others
 
     log = RunLog()
     print(f"Logging this run to {log.dir}")
+    # One 's' press is one trial. Counted and totalled here so the operator
+    # does not have to; it starts again from 1 each time main.py is started.
     snapshot_no = 0
+    trial = "Hover check" if cli_args.hover else "Trial"
+    total_placed = total_located = 0
 
     while cli_args.no_hardware or rclpy.ok():
         if cli_args.no_hardware:
@@ -342,6 +347,7 @@ def main(args=None):
         snapshot_targets = targets
 
         snapshot_no += 1
+        print(f"\n===== {trial} {snapshot_no} =====")
         if not cli_args.no_hardware:
             log.save_image(f"snapshot_{snapshot_no:02d}_raw.jpg", snapshot['raw'])
             log.save_image(f"snapshot_{snapshot_no:02d}_detections.jpg", snapshot['annotated'])
@@ -361,7 +367,7 @@ def main(args=None):
         # so a part pushed by the last pick is found where it now lies and a
         # part that is still there is tried again.
         while targets:
-            chosen, blocked = None, []
+            chosen, blocked, crowded = None, [], False
             located_parts = [locate(t) for t in targets]
             for (x, y, z, cls, *size), top in pick_order(located_parts):
                 width_mm = size[0] if size else None
@@ -400,10 +406,27 @@ def main(args=None):
 
                 part = (x, y, z, cls, grasp_x, grasp_y, grasp_z, width_mm, top_z)
                 if grasp is None:
-                    blocked.append(part)
+                    blocked.append((part, (seen_x, seen_y)))
                     continue
                 chosen, (opening, yaw) = part, grasp
                 break
+
+            # Deadlock: every part left has a neighbour in the way, typically
+            # two parts standing against each other, one half hidden behind
+            # the other. Leaving them helps nobody, so take the first one
+            # (the tallest) regardless of its neighbours. The fingers must
+            # still come down on free space as far as the depth points show.
+            if chosen is None:
+                for part, (seen_x, seen_y) in blocked:
+                    grasp = choose_grasp(None if node is None else node.cloud_mm,
+                                         seen_x, seen_y, part[6], part[7])
+                    if grasp is not None:
+                        print("Every part left has a neighbour in the way - "
+                              "taking the tallest one anyway.")
+                        chosen, (opening, yaw) = part, grasp
+                        crowded = True
+                        break
+            blocked = [part for part, _ in blocked]
 
             started = time.time()
             failed_step, grip_width, descent_current = None, None, None
@@ -455,6 +478,8 @@ def main(args=None):
                     "opening_mm": "" if opening is None else opening / 10,
                     "yaw_deg": "" if yaw is None else round(math.degrees(yaw)),
                     "outcome": outcome,
+                    # 1 if it was picked although a neighbour stood in the way.
+                    "crowded": int(crowded),
                     "failed_step": failed_step or "",
                     "grip_width_mm": "" if grip_width is None else round(grip_width, 1),
                     "descent_current_a": "" if descent_current is None else round(descent_current, 2),
@@ -500,7 +525,9 @@ def main(args=None):
             # Parts the last detection still saw on the board.
             "remaining": len(targets),
         }
-        print(f"Snapshot {snapshot_no}: {row['detected']} detected, {row['located']} located, "
+        total_placed += row["placed"]
+        total_located += row["located"]
+        print(f"{trial} {snapshot_no}: {row['detected']} detected, {row['located']} located, "
               f"{row['placed']} placed, {row['empty_grasp']} empty grasp(s), "
               f"{row['blocked_descent']} blocked descent(s), "
               f"{row['no_free_yaw']} left (no free angle), {row['move_failed']} failed move, "
@@ -524,7 +551,9 @@ def main(args=None):
             print("[mock] demo cycle completed.")
             break
 
-        print("Press 's' for the next snapshot, 'q' to quit.")
+        print(f"\n{snapshot_no} {trial.lower()}(s) done this session: "
+              f"{total_placed} placed of {total_located} located in total.")
+        print(f"Press 's' for {trial.lower()} {snapshot_no + 1}, 'q' to quit.")
         node.target_positions = None
 
     log.close()

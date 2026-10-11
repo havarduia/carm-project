@@ -117,6 +117,10 @@ The currents are read over the arm's own SDK (`xarm-python-sdk`, address `XARM_I
 `helpers/movement.py`), because the joint effort ROS publishes is a modelled torque that
 does not react to contact; without the SDK the descents simply run unguarded.
 
+One `s` press is one trial: it is numbered on screen, and after each one the terminal
+shows how many trials are done and the running total placed. The count restarts at 1
+whenever `main.py` is started, and is the `snapshot` column in the logs.
+
 One `s` press clears the board one part at a time. After every pick the arm returns
 home, out of the camera's view, and the board is detected again, so a part pushed by the
 last pick is found where it now lies and a part that is still there is tried again (up to
@@ -132,9 +136,11 @@ to `GRIPPER_OPEN`. Parts are still released at `GRIPPER_OPEN`.
 
 A gripper angle is also refused if another detected part would stand anywhere under the
 gripper: between the finger faces it would be clamped along with the target, or instead of
-it. Such a part waits until its neighbour has been picked. Two parts standing closer than
-about a finger width (25 mm) block each other and are both left on the board, logged as
-`no_free_yaw`.
+it. Such a part waits until its neighbour has been picked. A neighbour that ends below
+the fingertips does not count, so a tall part is gripped above a short one beside it. If
+every part left has a neighbour in the way, the tallest is taken regardless (`crowded` = 1
+in `picks.csv`), as long as the fingers still come down on free space; only parts for
+which no angle is free at all are left, logged as `no_free_yaw`.
 
 Components are sorted by the class the model reports, one drop-off bin each. The bin
 positions are `PLACE_BINS` at the top of `main/main.py`, as `(x, y, release z)` in mm

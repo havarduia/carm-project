@@ -26,6 +26,10 @@ MARGIN_MM = 4.0
 # (2026-10-11), though the fingers fit between them with room to spare.
 NEIGHBOUR_MARGIN_MM = 2.0
 
+# A neighbour whose top is at least this far below the fingertips is not in
+# their way: a tall part is gripped above a short one standing right next to it.
+NEIGHBOUR_BELOW_MM = 3.0
+
 # Depth points this far around the grasp are used: far enough to cover both
 # finger strips at any yaw, near enough that the floor found is the local one.
 SEARCH_RADIUS_MM = 50.0
@@ -112,18 +116,22 @@ def strip_report(d, height, tip_height, gap_mm, yaw):
     return blocked, int(tall[in_strip(6.0)].sum())
 
 
-def clamps_neighbour(x, y, gap_mm, yaw, neighbours):
+def clamps_neighbour(x, y, gap_mm, yaw, neighbours, tip_z=None):
     """True if a neighbour stands anywhere under the gripper at (x, y).
 
     The fingers are much wider than a small part, so another part standing
     beside it, between the finger faces, is clamped along with it or instead
     of it. One under a finger is landed on, also when it is too short for the
     depth check to see. `neighbours` are the other detected parts, as
-    (x, y, radius) in mm.
+    (x, y, radius) or (x, y, radius, top z) in mm. With `tip_z`, the height
+    the fingertips stop at, a neighbour that ends below them does not count.
     """
     cx, cy = closing_axis(yaw)
     half_width = FINGER_WIDTH_MM / 2.0 + NEIGHBOUR_MARGIN_MM
-    for nx, ny, radius in neighbours:
+    for nx, ny, radius, *top in neighbours:
+        if tip_z is not None and top and top[0] is not None \
+                and top[0] <= tip_z - NEIGHBOUR_BELOW_MM:
+            continue
         dx, dy = nx - x, ny - y
         along = dx * cx + dy * cy
         across = dx * cy - dy * cx
@@ -138,14 +146,14 @@ def choose_grasp_yaw(cloud_mm, x, y, grasp_z, gap_mm, floor_z, neighbours=()):
     `cloud_mm` is the snapshot's depth points, (N, 3) mm in link_base.
     `gap_mm` is the opening between the fingers on the way down and `floor_z`
     the real height of the table in link_base. `neighbours` are the other
-    detected parts, as (x, y, radius) in mm; a yaw that would clamp one of
+    detected parts, as for clamps_neighbour(); a yaw that would clamp one of
     them is not used.
     """
     d, height = local_scene(cloud_mm, x, y)
     best = None
     for deg in YAWS_DEG:
         yaw = math.radians(deg)
-        if clamps_neighbour(x, y, gap_mm, yaw, neighbours):
+        if clamps_neighbour(x, y, gap_mm, yaw, neighbours, grasp_z):
             continue
         blocked, crowding = strip_report(d, height, grasp_z - floor_z, gap_mm, yaw)
         if not blocked and (best is None or crowding < best[0]):
