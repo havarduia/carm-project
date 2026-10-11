@@ -1,292 +1,298 @@
 # carm-project
 
-This repository contains an xArm pick-and-place workflow that integrates ROS2, an Intel RealSense camera, a locally-run YOLO26 detector, and MoveIt 2 for robot motion planning and execution. The system detects objects using YOLO, transforms the 2D coordinates to 3D using RealSense depth data, applies a static TF to find the object's position in the robot's base frame, and then commands the xArm to execute the pick.
+A UFACTORY xArm 6 that clears loose through-hole components off a circuit board and sorts
+them into bins. A fixed Intel RealSense D435i looks at the board, a YOLO26 model running
+locally finds the components, and MoveIt 2 moves the arm. After every pick the board is
+looked at again, so each grasp is planned from a fresh image.
+
+## Results
+
+Five trials on 2026-10-11, ten loose capacitors on the board in each.
+
+| | |
+| --- | --- |
+| Parts picked and binned | 50 of 50 |
+| Retries, empty grasps, blocked descents, parts left on the board | 0 |
+| Time per pick | 12.4 s mean (11.8 to 13.9 s) |
+| Time to clear a board of ten | 125 to 130 s |
+| Detections in the first image of each trial | 10, 10, 11, 12, 10 (three double boxes, one labelled transformer; all filtered out before picking) |
+
+![KPIs of the five trials](results/five_trials_2026-10-11/plots/01_kpi_trials.png)
+
+![Where the time of one pick goes](results/five_trials_2026-10-11/plots/02_time_per_phase.png)
+
+All 50 parts were capacitors, so these trials do not test sorting into different bins.
+
+The full record is in [`results/five_trials_2026-10-11/`](results/five_trials_2026-10-11/README.md):
+the raw logs, the terminal output, the snapshot images, derived tables and eleven plots.
+
+The detector is `yolo26s_v9_1280`, a YOLO26s fine-tuned on our own photos plus a public
+PCB dataset. On its test split (15 photos, 290 labelled objects) it scores:
+
+| Class | Objects | Precision | Recall | mAP@50 | mAP@50-95 |
+| --- | --- | --- | --- | --- | --- |
+| All | 290 | 0.78 | 0.85 | 0.84 | 0.60 |
+| Capacitor | 253 | 0.85 | 0.88 | 0.91 | 0.70 |
+| Resistor | 8 | 0.76 | 0.88 | 0.81 | 0.49 |
+| Transformer | 29 | 0.74 | 0.78 | 0.80 | 0.60 |
+
+Its curves, confusion matrix and dataset breakdown are in
+[`results/yolo26s_v9_1280/`](results/yolo26s_v9_1280/README.md); how it was trained is in
+[`model_training/yolo26s_v9_1280.md`](model_training/yolo26s_v9_1280.md).
+
+## How a pick works
+
+Pressing `s` starts one trial, which runs until the board is empty:
+
+1. **Detect.** The colour frame goes through the model. Detections under confidence 0.50
+   are dropped, as are a second box within 8 mm of another and anything outside the pick
+   area, which keeps the arm from picking parts back out of the bins.
+2. **Locate.** Each detection is turned into a point in the robot's base frame using the
+   aligned depth image and the camera-to-base transform. The grasp point is the centre of
+   the part's top face, found in the depth points over the part.
+3. **Choose.** The tallest part goes first: it is in the way of the fingers reaching for
+   its neighbours and hides what stands behind it from the camera.
+4. **Plan the grasp.** The fingers open to the part's width plus 6 mm per side, and the
+   gripper turns to the angle where both fingers come down on free space. An angle that
+   would put a neighbouring part between or under the fingers is refused, unless that
+   neighbour ends below the fingertips. If every part left has a neighbour in the way,
+   the tallest is taken anyway.
+5. **Pick.** The arm moves above the part, descends straight down to 15 mm below its top
+   (never below the table limit), closes, and lifts straight up. If the gripper closes on
+   nothing, it opens again and skips the trip to the bin.
+6. **Place.** The part is carried to the bin for its class and released, and the arm
+   returns home, out of the camera's view.
+7. **Repeat** from step 1 with a new image. A part that is still there is tried once
+   more; a part pushed by the last pick is found where it now lies.
+
+The descent in step 5 is guarded. If the shoulder or elbow motor current jumps by more
+than 1.2 A within 0.2 s, the arm has come down on something: the move is cancelled, the
+arm lifts off and the part is left for the next round. Only that descent runs slowly;
+every move clear of the board runs at twice its speed.
 
 ## Repository layout
 
-- `main/main.py` — The primary runtime script. Sets up the object detection node and commands the robot to perform the pick-and-place workflow using MoveIt.
-- `detection_model/yolo_model.py` — A ROS2 node that processes the RealSense camera feeds (RGB and aligned depth), runs the YOLO26 model (`detection_model/weights/yolo26s_v9_1280.pt`) on the GPU, computes 3D points, and applies the static TF to output target coordinates in the robot base frame (`link_base`).
-- `helpers/movement.py` — Contains helper classes and functions wrapping MoveIt 2 Action Clients (`ExecuteTrajectory`) and `GripperCommand` to comfortably control the xArm motion and end-effector. All motion goes through `move_to(x, y, z)` in mm in `link_base`, with the gripper held pointing straight down.
-- `calibration/aruco_realsense_tf_node.py` — A utility ROS2 node for calculating the camera-to-robot base transform using ArUco markers.
-- `calibration/generate_aruco.py` — Generates printable ArUco markers and boards used for the camera calibration routine.
+| Path | What it is |
+| --- | --- |
+| `main/main.py` | The pick-and-place loop, bin positions and grasp settings |
+| `detection_model/yolo_model.py` | ROS 2 node: camera frames in, detections located in the robot's base frame out |
+| `helpers/movement.py` | Arm and gripper moves through MoveIt, table limit, speeds, guarded descent |
+| `helpers/part_top.py` | Finds the top face of a part in the depth points |
+| `helpers/grasp_yaw.py` | Chooses the gripper angle and checks for neighbours |
+| `helpers/run_log.py` | Writes the per-run log folder |
+| `plot_trials.py` | KPI figure for one run |
+| `test_main.py` | Self-checks that need no robot or camera |
+| `calibration/` | Marker generator and detector for the hand-eye calibration |
+| `model_training/` | Dataset preparation, training script and model card for the detector |
+| `results/` | The trial record and the detector's evaluation |
 
-## Prerequisites & Dependencies
+## Setup
 
-To run this workflow, you need the following installed in your ROS2 environment (tested on Humble):
+Tested on Ubuntu 22.04 with ROS 2 Humble and an RTX 5070.
 
-- **ROS2** 
-- **librealsense2** and **realsense-ros**
-- **xArm ROS2 packages** (specifically `xarm_moveit_config`)
-- **MoveIt 2**
-- **PyTorch** (CUDA 12.8 build for the RTX 50-series) and **Ultralytics** (`ultralytics`)
-- **OpenCV** Python package (`opencv-python`)
-- **cv_bridge** (e.g., `ros-humble-cv-bridge`)
+ROS side, installed through apt or built in the ROS workspace:
 
-### Detection model
+- `realsense2_camera` (realsense-ros) and librealsense2
+- `xarm_ros2`, for `xarm_moveit_config`
+- MoveIt 2
+- `easy_handeye2`, for publishing the camera-to-base transform
+- `cv_bridge`, `image_geometry`, `tf2_ros`
 
-Detection runs locally on the GPU; no network or API key is needed. The weights are
-`detection_model/weights/yolo26s_v9_1280.pt`, a YOLO26s trained in
-[`model_training/`](model_training/README.md) (test mAP@50 0.84). To use a newly
-trained model, copy its `best.pt` over that file or change `MODEL_PATH` in
-`detection_model/yolo_model.py`.
-
-Install the model's dependencies into the repo venv without disturbing the NumPy 1.x
-pin (see `requirements.txt`):
+Python side, in a venv at the repo root:
 
 ```bash
+python3 -m venv .venv
+# torch first, from the CUDA 12.8 index that the RTX 50-series needs:
 .venv/bin/pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
-.venv/bin/pip install ultralytics -c <(echo 'numpy==1.26.4')
-# ultralytics pulls in opencv-python, which clobbers opencv-contrib-python:
+.venv/bin/pip install -r requirements.txt
+# ultralytics pulls in opencv-python, which overwrites opencv-contrib-python:
 .venv/bin/pip uninstall -y opencv-python
 .venv/bin/pip install --force-reinstall --no-deps 'opencv-contrib-python>=4.8,<4.12'
 ```
 
-## Required Launch Order
+NumPy stays below 2 because the ROS Humble `cv_bridge` is built against NumPy 1.x.
 
-You **must** launch the required ROS2 drivers, static transforms, and the MoveIt controller before running the main workflow. Ensure you run each of the following commands in **separate terminals** sourcing your ROS2 workspace.
+The model weights are not in git. Put them at `detection_model/weights/yolo26s_v9_1280.pt`;
+they are the `best.pt` of the training run described in `model_training/`.
 
-### 1) Start the RealSense ROS2 driver
+## Running
 
-The application relies on aligned depth and RGB topics from the camera. `publish_tf:=false` is required — otherwise the driver's own camera TF tree collides with the static transform in step 2 below and breaks the `link_base` → `camera_color_optical_frame` lookup.
+Each step in its own terminal, with `/opt/ros/humble/setup.bash` and the ROS workspace
+sourced.
+
+**1) Camera.** The model and the grasp checks expect 1920x1080 colour with sharpness 100.
+`publish_tf:=false` keeps the driver's own TF tree from colliding with the calibration
+transform of step 2.
 
 ```bash
-ros2 launch realsense2_camera rs_launch.py align_depth.enable:=true enable_sync:=true enable_rgbd:=true publish_tf:=false
+ros2 launch realsense2_camera rs_launch.py align_depth.enable:=true enable_sync:=true \
+  enable_rgbd:=true publish_tf:=false rgb_camera.color_profile:=1920x1080x30
+ros2 param set /camera/camera rgb_camera.sharpness 100
 ```
 
-### 2) Publish the camera-to-base transform
+The sharpness setting is lost when the driver restarts, so set it after every start.
 
-This maps the camera optical frame to the robot base, which is what lets the YOLO
-detections be projected into a coordinate system the robot understands. It is published
-straight from the saved hand-eye calibration:
+**2) Camera-to-base transform**, from the saved hand-eye calibration:
 
 ```bash
 ros2 launch easy_handeye2 publish.launch.py name:=carm_eob
 ```
 
-If the camera is moved or re-mounted this transform is wrong and the calibration must be
-redone — see [Camera calibration (hand-eye)](#camera-calibration-hand-eye) below.
-
-<details>
-<summary>Equivalent raw command, if you'd rather not depend on easy_handeye2 at runtime</summary>
-
-From the calibration of 2026-09-02. Regenerate these from
-`~/.ros2/easy_handeye2/calibrations/carm_eob.calib` after any recalibration:
+**3) MoveIt**, connected to the arm:
 
 ```bash
-ros2 run tf2_ros static_transform_publisher --x 0.099766 --y -0.121559 --z 0.353031 --qx -0.840483 --qy 0.426063 --qz -0.160939 --qw 0.293526 --frame-id link_base --child-frame-id camera_color_optical_frame
+ros2 launch xarm_moveit_config xarm6_moveit_realmove.launch.py robot_ip:=192.168.1.225 add_gripper:=true
 ```
-</details>
 
-### 3) Launch the MoveIt 2 Configuration
+The same address is `XARM_IP` in `helpers/movement.py`, which reads the motor currents
+for the guarded descent over the arm's own SDK. Without that connection the descents run
+unguarded and a warning is printed.
 
-This starts the MoveIt controller to manage motion planning and execution for the xArm. Replace `192.168.1.xxx` with your robot's actual IP address.
+**4) The pick loop**, with the repo venv active:
 
 ```bash
-ros2 launch xarm_moveit_config xarm6_moveit_realmove.launch.py robot_ip:=192.168.1.xxx add_gripper:=true
+python3 main/main.py
 ```
 
-### 4) Run the full xArm workflow
+The arm opens the gripper and moves home as soon as it starts. Then:
 
-Once the camera is publishing, the TF is registered, and MoveIt is ready to accept trajectory commands, you can start the main pick-and-place routine.
+| Key | Does |
+| --- | --- |
+| `s` | Starts the next trial: clears the board, then asks the operator five count questions |
+| `q` | Quits |
 
-```bash
-python3 main/main.py                          # pick everything, sorted by type
-python3 main/main.py --target-class resistor  # pick resistors only
-```
+Trials are numbered on screen, with a running total of parts placed after each one. The
+count starts at 1 each time `main.py` is started.
 
-The grasp point is the centre of the part's top face, found in the depth points
-(`helpers/part_top.py`) and shifted by the `offset_x/y` trim in `main()`, and the fingertips stop `GRASP_DEPTH_MM` below it. The
-detector's own point is the depth at the centre of the detection box, which on a
-standing part lies on the side wall facing the camera, so it is only used with the fixed
-`offset_x/y/z` in `main()` when the top face cannot be found.
+| Option | Does |
+| --- | --- |
+| `--target-class capacitor` | Picks only that class |
+| `--hover` | Per `s` press, holds the open gripper 10 mm above the first part instead of picking, to check the alignment by eye |
+| `--no-hardware` | Runs one cycle with made-up detections and a mock arm; needs no camera or robot |
 
-Each pick approaches from `APPROACH_HEIGHT` mm above the component, lowers straight
-down, grips, and lifts clear before travelling — so the gripper never sweeps sideways
-at component height.
+To watch what the model sees, add these displays in RViz 2 with the fixed frame
+`link_base`:
 
-Parts are taken tallest first (`pick_order` in `main/main.py`): a tall part is in the way
-of the fingers reaching for its neighbours and hides what stands behind it from the camera.
-Only the descent onto a part runs at `DEFAULT_SPEED`; every move clear of the board runs
-at `TRAVEL_SPEED` (both in `helpers/movement.py`).
+- **Image** on `/yolo/detection_image`: the last frame with its detection boxes.
+- **MarkerArray** on `/yolo/detection_boxes`: one box per detection, placed where the arm
+  will reach for it. These are for viewing only; MoveIt does not treat them as obstacles.
 
-That descent is guarded: if the shoulder or elbow motor current jumps by more than
-`BLOCKED_CURRENT_A`, the arm has come down on something, the move is cancelled, the arm
-lifts off again and the part is logged as `blocked_descent`. The largest current change of
-every descent is logged as `descent_current_a` in `picks.csv`, to set that threshold from.
-The currents are read over the arm's own SDK (`xarm-python-sdk`, address `XARM_IP` in
-`helpers/movement.py`), because the joint effort ROS publishes is a modelled torque that
-does not react to contact; without the SDK the descents simply run unguarded.
+## Logs
 
-One `s` press is one trial: it is numbered on screen, and after each one the terminal
-shows how many trials are done and the running total placed. The count restarts at 1
-whenever `main.py` is started, and is the `snapshot` column in the logs.
+Every run of `main.py` writes a folder `logs/<date>_<time>/`:
 
-One `s` press clears the board one part at a time. After every pick the arm returns
-home, out of the camera's view, and the board is detected again, so a part pushed by the
-last pick is found where it now lies and a part that is still there is tried again (up to
-`MAX_ATTEMPTS_PER_PART` times per spot). If the gripper closes to less than
-`EMPTY_GRIP_MM` it holds nothing: it opens, skips the trip to the bin, and the part is
-retried. Detections outside `PICK_AREA_MM` are ignored, which keeps the arm from picking
-parts back out of the bins. All three constants are at the top of `main/main.py`.
+| File | Contents |
+| --- | --- |
+| `picks.csv` | One row per pick: position, top height, grasp point, estimated width, finger opening, gripper angle, outcome, grip width after closing, largest current jump of the descent, seconds |
+| `snapshots.csv` | One row per trial: detections, parts located, placed, each kind of failure, parts remaining, and the operator's answers |
+| `snapshot_NN_raw.jpg`, `_detections.jpg`, `_after.jpg` | The camera frame at the start of the trial, the same with boxes, and the last detection of the trial |
 
-The fingers descend only as far open as the part needs: its width, taken from the narrow
-side of the detection box, plus `FINGER_CLEARANCE_MM` on each side (never less than
-`MIN_GRIPPER_OPEN`). If no gripper angle is free at that opening, wider ones are tried up
-to `GRIPPER_OPEN`. Parts are still released at `GRIPPER_OPEN`.
+Outcomes in `picks.csv` are `placed`, `empty_grasp`, `blocked_descent`, `no_free_yaw`
+(no gripper angle was free) and `move_failed`. `crowded` is 1 for a part taken although
+a neighbour stood in the way.
 
-A gripper angle is also refused if another detected part would stand anywhere under the
-gripper: between the finger faces it would be clamped along with the target, or instead of
-it. Such a part waits until its neighbour has been picked. A neighbour that ends below
-the fingertips does not count, so a tall part is gripped above a short one beside it. If
-every part left has a neighbour in the way, the tallest is taken regardless (`crowded` = 1
-in `picks.csv`), as long as the fingers still come down on free space; only parts for
-which no angle is free at all are left, logged as `no_free_yaw`.
+`python3 plot_trials.py` draws the KPI figure for the newest run into its log folder;
+`--run <folder name>` picks another.
 
-Components are sorted by the class the model reports, one drop-off bin each. The bin
-positions are `PLACE_BINS` at the top of `main/main.py`, as `(x, y, release z)` in mm
-in `link_base`; a class with no bin goes to `REJECT_BIN`. Measure your actual bins and
-edit that table — the shipped values are placeholders.
+## Settings
 
-### Optional: run without connected hardware
+Bins, in `main/main.py` as `(x, y, release height)` in mm in the robot's base frame:
 
-If you do not have a RealSense camera or xArm connected, you can run a mock/demo cycle:
+| Class | Bin |
+| --- | --- |
+| capacitor | (70, 220.6, 60) |
+| resistor | (170, 220.6, 60) |
+| transformer | (270, 220.6, 60) |
+| any other class | (370, 220.6, 60) |
 
-```bash
-python3 main/main.py --no-hardware
-```
+Grasping, in `main/main.py`:
 
-This mode avoids camera subscriptions and robot controllers by using synthetic detections and mocked arm/gripper commands.
+| Constant | Value | Meaning |
+| --- | --- | --- |
+| `offset_x`, `offset_y` (in `main()`) | -14, 10 mm | Trim between where the camera sees a part and where the arm has to go; see the hover check below |
+| `PICK_AREA_MM` | x 150 to 600, y -250 to 150 | Detections outside this are ignored |
+| `GRASP_DEPTH_MM` | 15 | Fingertips stop this far below the part's top |
+| `APPROACH_HEIGHT` | 80 mm | Height above the grasp from which the arm descends and to which it lifts |
+| `FINGER_CLEARANCE_MM` | 6 | Free space per side added to the part's width for the finger opening |
+| `GRIPPER_OPEN` | 400 (40 mm) | Largest opening, also used to release |
+| `BOX_TO_PART_WIDTH` | 0.75 | Share of the detection-box width taken as a neighbour's real width |
+| `EMPTY_GRIP_MM` | 1.0 | A gripper closed further than this holds nothing |
+| `MAX_ATTEMPTS_PER_PART` | 2 | Tries per spot before a part is left |
 
-*Note: `--target-class` narrows detection to a single class; by default every detected class is picked and sorted. Press `s` in the terminal running `main.py` to take a detection snapshot, `q` to quit — no OpenCV window is opened.*
+Arm, in `helpers/movement.py`:
 
-The annotated snapshot is published as `sensor_msgs/Image` on `/yolo/detection_image`.
-View it in RViz2 with an **Image** display on that topic, or:
+| Constant | Value | Meaning |
+| --- | --- | --- |
+| `MIN_Z_MM` | 6 mm | Lowest height the fingertips may be sent to: the measured table contact (-4 mm) plus 10 mm. A move below it is refused |
+| `DEFAULT_SPEED` | 0.3 | Speed of the descent onto a part, as a fraction of MoveIt's planned speed |
+| `TRAVEL_SPEED` | 0.6 | Speed of every other move |
+| `BLOCKED_CURRENT_A` | 1.2 A | Current jump that stops a descent |
+| `HOME_POSE_MM` | (130, 0, 300) | Rest pose between picks, clear of the camera's view |
 
-```bash
-ros2 run rqt_image_view rqt_image_view /yolo/detection_image
-```
+Detection, in `detection_model/yolo_model.py`:
 
-The same detections are published as a `visualization_msgs/MarkerArray` on
-`/yolo/detection_boxes` — one translucent box per component, sized from the depth
-pixels inside its detection box, in `camera_color_optical_frame`. Add a
-**MarkerArray** display on that topic in RViz2 with the fixed frame set to
-`link_base` to see the components sitting where the arm will reach for them. The
-topic is latched, so it survives opening RViz2 after a detection. These boxes are
-visualisation only — they are not collision objects and MoveIt never sees them.
+| Constant | Value | Meaning |
+| --- | --- | --- |
+| `MODEL_PATH` | `weights/yolo26s_v9_1280.pt` | Weights file |
+| `MODEL_IMGSZ` | 1280 | Inference size; the 1920x1080 frame is scaled down to it |
+| `CONF_THRESHOLD` | 0.50 | Lowest confidence acted on |
+| `DUPLICATE_RADIUS_MM` | 8 | Detections closer together than this count as one part |
+| `DEPTH_HALF_WINDOW` | 2 px | Half-width of the depth window sampled at a detection's centre |
+| `DEPTH_RANGE_M` | 0.15 to 1.5 | Depth readings outside this are discarded |
 
-### Table limit
-
-`MIN_Z_MM` in `helpers/movement.py` is a hard floor on the TCP z, in mm in `link_base`.
-Every motion goes through `move_to()`, so nothing can be commanded below it — a move
-below the floor is **refused**, which makes the limit a hard backstop for every caller.
-
-The pick cycle in `main.py` clamps to the floor before it gets there: a component whose
-grasp would fall below the limit is picked at the limit instead of being skipped. The
-clamp is logged, and a part grasped at the floor may be gripped slightly high — if
-picks start slipping, that is the message to look for.
-
-It is derived from two constants, so re-measuring the table does not mean recomputing
-the margin by hand:
-
-```python
-TABLE_CONTACT_Z_MM = -4.0   # measured: gripper jogged down until it touched the table
-TABLE_CLEARANCE_MM = 10.0   # safety margin held above that
-MIN_Z_MM = TABLE_CONTACT_Z_MM + TABLE_CLEARANCE_MM   # 6.0
-```
-
-Re-measure the contact point whenever the table, the mount, or the gripper fingers
-change:
+Re-measure the table contact whenever the table, the mount or the fingers change: jog the
+gripper down until it touches and read the height with
 
 ```bash
 ros2 run tf2_ros tf2_echo link_base link_tcp
 ```
 
-Note the interaction with `GRASP_DEPTH_MM` in `main/main.py`, which puts the grasp 15 mm
-below the part's top face: a component whose top sits less than that above the floor
-gets its grasp clamped to the floor. If thin parts are
-being gripped too high, that pairing is what to adjust — not the floor alone.
-
-### Detection tuning
-
-Constants at the top of `detection_model/yolo_model.py`:
-
-| Constant | Meaning |
-| --- | --- |
-| `CONF_THRESHOLD` | Minimum model confidence to act on a detection. |
-| `DEPTH_HALF_WINDOW` | Half-width of the median depth window. Keep it smaller than the smallest component, or the median reads the table and the grasp goes too deep. |
-| `MIN_DEPTH_SAMPLES` | Valid (non-zero) pixels required in that window. RealSense writes 0 where it measured nothing. |
-| `DEPTH_RANGE_M` | Plausible camera-to-table distance. Widen if the camera is remounted further away. |
-| `DUPLICATE_RADIUS_MM` | Targets closer than this are treated as one object, in case one part is reported twice. |
-| `MODEL_PATH`, `MODEL_IMGSZ` | Weights file and inference size (1280, matching training). |
-
 ## Tests
-
-The pick-ordering logic has a self-check with no ROS or hardware needed:
 
 ```bash
 python3 test_main.py
 ```
 
-## Camera calibration (hand-eye)
+Checks the pick order, pick area, grasp planning, neighbour rule, top-face finder, empty
+and blocked grasps, the current guard and the run log. It needs ROS sourced and the repo
+venv, but no camera or robot.
 
-The camera sits on a fixed mount next to the arm, so this is an **eye-on-base**
-calibration: the camera is stationary and the ArUco marker is bolted to the gripper.
-The arm waves the marker around, `easy_handeye2` correlates `link_base -> link_eef`
-against `camera_color_optical_frame -> aruco_marker`, and solves for
-`link_base -> camera_color_optical_frame`.
+## Camera calibration
 
-`calibration/aruco_realsense_tf_node.py` plays the role of `aruco_ros` here, so
-that package is not needed.
+The camera sits on a fixed mount beside the arm, so this is an eye-on-base calibration:
+an ArUco marker is fixed to the gripper, the arm shows it to the camera from many poses,
+and `easy_handeye2` solves for the transform from `link_base` to
+`camera_color_optical_frame`. `calibration/aruco_realsense_tf_node.py` does the marker
+detection.
+
+Redo it whenever the camera or its mount is moved.
 
 ### One-time setup
 
-[easy_handeye2](https://github.com/marcoesposito1988/easy_handeye2) is checked out
-and built in `~/carm_ws`:
+`easy_handeye2` is built in the ROS workspace:
 
 ```bash
 cd ~/carm_ws/src && git clone https://github.com/marcoesposito1988/easy_handeye2
 cd ~/carm_ws && colcon build --packages-select easy_handeye2_msgs easy_handeye2
-```
-
-It needs `transforms3d >= 0.4`. The apt package (`python3-transforms3d`, 0.3.1) uses
-`np.float`, which NumPy 1.26 removed, so the node dies on import. Install a newer one
-for the *system* interpreter:
-
-```bash
 /usr/bin/python3 -m pip install --user -U 'transforms3d>=0.4'
 ```
 
-> Run every command below with the system Python, **not** this repo's `.venv`.
-> `cv_bridge`, `rclpy` and `tf2_ros` are apt-installed into `/usr/lib/python3/dist-packages`
-> and are not visible from the venv. `deactivate` first if the venv is active.
+Run every calibration command with the system Python, not the repo venv.
 
 ### Marker
 
-A single ArUco marker, `DICT_6X6_1000` id **398**. Mount it rigidly and *flat* on the
-gripper — any wobble or tilt relative to `link_eef` goes straight into the calibration
-error. Marker size is the side of the **black square only**, excluding the white quiet
-zone, in metres.
+One ArUco marker, `DICT_6X6_1000` id 398, mounted rigidly and flat on the gripper.
+`calibration/generate_aruco.py` makes the printable image. The marker size is the side of
+the black square alone, in metres.
 
 ### Procedure
 
-Each step in its own terminal, sourcing `/opt/ros/humble/setup.bash` and
-`~/carm_ws/install/setup.bash`.
+Each step in its own terminal.
 
-**1) RealSense driver** — same as the normal launch order:
+**1) Camera driver,** as in step 1 of Running.
 
-```bash
-ros2 launch realsense2_camera rs_launch.py align_depth.enable:=true enable_sync:=true enable_rgbd:=true publish_tf:=false
-```
-
-**2) Robot driver / MoveIt** — supplies the `link_base -> link_eef` TF:
-
-```bash
-ros2 launch xarm_moveit_config xarm6_moveit_realmove.launch.py robot_ip:=192.168.1.xxx add_gripper:=true
-```
-
-> Do **not** start the static transform from step 2 of the launch order above.
-> `calibrate.launch.py` publishes its own placeholder `link_base -> camera_color_optical_frame`,
-> and two publishers fighting over the same TF edge produce garbage samples.
+**2) MoveIt,** as in step 3 of Running. Do not start the transform of step 2: the
+calibrator publishes its own placeholder for the same link.
 
 **3) Marker detector:**
 
@@ -300,7 +306,7 @@ python3 calibration/aruco_realsense_tf_node.py --ros-args \
   -p show_debug_window:=true
 ```
 
-Check that it actually sees the marker before continuing:
+Check that it sees the marker:
 
 ```bash
 ros2 run tf2_ros tf2_echo camera_color_optical_frame aruco_marker
@@ -318,26 +324,25 @@ ros2 launch easy_handeye2 calibrate.launch.py \
   tracking_marker_frame:=aruco_marker
 ```
 
-**5) Sample.** Jog the arm (freedrive or MoveIt) to a pose where the camera sees the
-marker, then hit *Take sample* in the rqt window. Repeat for **at least 15 poses**.
-What matters:
+**5) Sample.** Move the arm to a pose where the camera sees the marker and press *Take
+sample*. Do this for at least 15 poses, with large changes in orientation between them,
+the marker close to the camera, and the poses spread over the whole image.
 
-- **Rotate a lot** between poses — large orientation changes are what make the
-  solve well-conditioned. Pure translation adds nothing.
-- Keep the marker close to the camera and filling a good chunk of the frame.
-- Vary distance and cover the corners of the image, not just the centre.
-- Skip any pose where the detector's reprojection error looks high or the axes in the
-  debug window jitter.
-
-**6) Compute and save.** *Compute* then *Save*, which writes
+**6) Compute and save.** *Compute*, then *Save*, which writes
 `~/.ros2/easy_handeye2/calibrations/carm_eob.calib`.
 
-**7) Use it.** Replace step 2 of the launch order with:
+### Hover check
+
+The calibration leaves an error of several millimetres, which `offset_x` and `offset_y`
+in `main/main.py` take out. To measure it, stand one capacitor alone on the board and run
 
 ```bash
-ros2 launch easy_handeye2 publish.launch.py name:=carm_eob
+python3 main/main.py --hover
 ```
 
-Sanity-check it: put an object at a known spot, run the pick workflow, and confirm the
-arm goes where it should. If it is off by a consistent scale factor, `marker_size` is
-wrong.
+Press `s`. The open gripper stops 10 mm above the part and waits. Look along the fingers
+and across them, or photograph both views level with the fingertips, and note how far the
+part's centre is from the middle of the gripper and in which direction. Adjust the two
+offsets by that amount and repeat at several spots on the board. With the offsets above,
+the part is within 2 to 3 mm of the centre at the middle and at two opposite corners of
+the board.
