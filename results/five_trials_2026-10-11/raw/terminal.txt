@@ -1,0 +1,1301 @@
+(.venv) carm@carm:~/carm-project$ python3 main/main.py 
+[INFO] [1791750535.267836977] [yolo_snapshot_node]: Press 's' in this terminal to detect, 'q' to quit. Results are published on /yolo/detection_image and /yolo/detection_boxes
+Initializing MoveIt planner for arm...
+SDK_VERSION: 1.18.4
+ROBOT_IP: 192.168.1.225, VERSION: v2.6.0, PROTOCOL: V1, DETAIL: 6,6,XI1305,AC1304,v2.6.0, TYPE1300: [1, 1]
+change protocol identifier to 3
+[INFO] [1791750535.381955341] [move_arm_node]: Waiting for services and action servers...
+[INFO] [1791750535.413012257] [move_arm_node]: MoveArm ready.
+[INFO] [1791750535.413543690] [move_arm_node]: camera_pole added.
+[INFO] [1791750536.415910761] [move_arm_node]: camera_ball added.
+[INFO] [1791750537.417076026] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750538.650380250] [move_arm_node]: Gripper done
+[INFO] [1791750538.650531750] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750539.061503795] [move_arm_node]: Move complete.
+Logging this run to /home/carm/carm-project/logs/2026-10-11_222859
+Detected: 10x capacitor
+
+===== Trial 1 =====
+[INFO] [1791750591.379027706] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750592.615682119] [move_arm_node]: Gripper done
+Captured target in main: 383.8553501404328, -56.92791195316796, 42.33808558345709 (capacitor)
+Gripper yaw: -15 deg, opening 40 mm
+[INFO] [1791750592.872739065] [move_arm_node]: Cartesian move to (376.1684454429687, -47.59166431186274, 121.3892961571477), yaw -15 deg
+[INFO] [1791750594.661294409] [move_arm_node]: Move complete.
+[INFO] [1791750594.661452173] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750595.892820991] [move_arm_node]: Gripper done
+[INFO] [1791750595.892973820] [move_arm_node]: Cartesian move to (376.1684454429687, -47.59166431186274, 41.3892961571477), yaw -15 deg
+[INFO] [1791750597.362104296] [move_arm_node]: Move complete.
+[INFO] [1791750597.362256039] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750598.063082581] [move_arm_node]: Gripper done
+[INFO] [1791750598.063234331] [move_arm_node]: Cartesian move to (376.1684454429687, -47.59166431186274, 121.3892961571477), yaw -15 deg
+[INFO] [1791750599.161534176] [move_arm_node]: Move complete.
+[INFO] [1791750599.161703075] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750601.261559856] [move_arm_node]: Move complete.
+[INFO] [1791750601.261714902] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750602.361665230] [move_arm_node]: Move complete.
+[INFO] [1791750602.361813987] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750602.840561564] [move_arm_node]: Gripper done
+[INFO] [1791750602.840707474] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750603.861430384] [move_arm_node]: Move complete.
+[INFO] [1791750603.861580102] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750605.862606308] [move_arm_node]: Move complete.
+Detected: 9x capacitor
+Captured target in main: 366.2601204142568, 74.3540528746914, 25.080741625921554 (capacitor)
+Gripper yaw: 0 deg, opening 33 mm
+[INFO] [1791750606.271521834] [move_arm_node]: Cartesian move to (356.6257929453693, 87.70230524321285, 104.17008948432746), yaw 0 deg
+[INFO] [1791750608.061295171] [move_arm_node]: Move complete.
+[INFO] [1791750608.061445899] [move_arm_node]: Setting gripper to 329
+[INFO] [1791750608.540026552] [move_arm_node]: Gripper done
+[INFO] [1791750608.540216895] [move_arm_node]: Cartesian move to (356.6257929453693, 87.70230524321285, 24.170089484327463), yaw 0 deg
+[INFO] [1791750610.062009099] [move_arm_node]: Move complete.
+[INFO] [1791750610.062155837] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750610.541705275] [move_arm_node]: Gripper done
+[INFO] [1791750610.541854406] [move_arm_node]: Cartesian move to (356.6257929453693, 87.70230524321285, 104.17008948432746), yaw 0 deg
+[INFO] [1791750611.561685522] [move_arm_node]: Move complete.
+[INFO] [1791750611.561847007] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750613.261514398] [move_arm_node]: Move complete.
+[INFO] [1791750613.261685952] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750614.361748532] [move_arm_node]: Move complete.
+[INFO] [1791750614.361931576] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750615.058828929] [move_arm_node]: Gripper done
+[INFO] [1791750615.058977938] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750616.161454485] [move_arm_node]: Move complete.
+[INFO] [1791750616.161611331] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750618.161540112] [move_arm_node]: Move complete.
+Detected: 8x capacitor
+Captured target in main: 358.7525700396696, -28.50464059581745, 25.655622567361814 (capacitor)
+Gripper yaw: 15 deg, opening 29 mm
+[INFO] [1791750618.638710086] [move_arm_node]: Cartesian move to (348.6351138308105, -16.42086537385435, 98.20962964439984), yaw 15 deg
+[INFO] [1791750620.361897385] [move_arm_node]: Move complete.
+[INFO] [1791750620.362142103] [move_arm_node]: Setting gripper to 287
+[INFO] [1791750620.950865331] [move_arm_node]: Gripper done
+[INFO] [1791750620.951204773] [move_arm_node]: Cartesian move to (348.6351138308105, -16.42086537385435, 18.20962964439984), yaw 15 deg
+[INFO] [1791750622.462117193] [move_arm_node]: Move complete.
+[INFO] [1791750622.462287443] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750623.049615185] [move_arm_node]: Gripper done
+[INFO] [1791750623.049761408] [move_arm_node]: Cartesian move to (348.6351138308105, -16.42086537385435, 98.20962964439984), yaw 15 deg
+[INFO] [1791750624.061778258] [move_arm_node]: Move complete.
+[INFO] [1791750624.061943895] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750626.161540612] [move_arm_node]: Move complete.
+[INFO] [1791750626.161698208] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750627.261811445] [move_arm_node]: Move complete.
+[INFO] [1791750627.261963466] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750627.746577123] [move_arm_node]: Gripper done
+[INFO] [1791750627.746718142] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750628.761394324] [move_arm_node]: Move complete.
+[INFO] [1791750628.761558017] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750630.762113200] [move_arm_node]: Move complete.
+Detected: 7x capacitor
+Captured target in main: 382.2848385904895, -6.317874731078699, 31.012871896976545 (capacitor)
+Gripper yaw: 75 deg, opening 28 mm
+[INFO] [1791750631.128967791] [move_arm_node]: Cartesian move to (370.3514697562965, 5.609834205358018, 98.42513731257458), yaw 75 deg
+[INFO] [1791750632.961635118] [move_arm_node]: Move complete.
+[INFO] [1791750632.961797819] [move_arm_node]: Setting gripper to 280
+[INFO] [1791750633.442291832] [move_arm_node]: Gripper done
+[INFO] [1791750633.442438214] [move_arm_node]: Cartesian move to (370.3514697562965, 5.609834205358018, 18.42513731257457), yaw 75 deg
+[INFO] [1791750634.962431733] [move_arm_node]: Move complete.
+[INFO] [1791750634.962594946] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750635.550604601] [move_arm_node]: Gripper done
+[INFO] [1791750635.550753708] [move_arm_node]: Cartesian move to (370.3514697562965, 5.609834205358018, 98.42513731257458), yaw 75 deg
+[INFO] [1791750636.563050238] [move_arm_node]: Move complete.
+[INFO] [1791750636.563236827] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750639.461734351] [move_arm_node]: Move complete.
+[INFO] [1791750639.461897441] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750640.562781633] [move_arm_node]: Move complete.
+[INFO] [1791750640.562938639] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750641.047915876] [move_arm_node]: Gripper done
+[INFO] [1791750641.048062717] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750642.061501449] [move_arm_node]: Move complete.
+[INFO] [1791750642.061692693] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750644.061533343] [move_arm_node]: Move complete.
+Detected: 6x capacitor
+Target at z=12.9 mm would grasp at 0.9 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 369.07104889971714, 40.85674434467049, 12.874696434097165 (capacitor)
+Gripper yaw: 75 deg, opening 25 mm
+[INFO] [1791750644.384833580] [move_arm_node]: Cartesian move to (357.6188640854087, 52.96091680888621, 86.0), yaw 75 deg
+[INFO] [1791750646.160931279] [move_arm_node]: Move complete.
+[INFO] [1791750646.161094394] [move_arm_node]: Setting gripper to 251
+[INFO] [1791750646.754542461] [move_arm_node]: Gripper done
+[INFO] [1791750646.754694115] [move_arm_node]: Cartesian move to (357.6188640854087, 52.96091680888621, 6.0), yaw 75 deg
+[INFO] [1791750648.261805293] [move_arm_node]: Move complete.
+[INFO] [1791750648.261945095] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750648.958222559] [move_arm_node]: Gripper done
+[INFO] [1791750648.958374508] [move_arm_node]: Cartesian move to (357.6188640854087, 52.96091680888621, 86.0), yaw 75 deg
+[INFO] [1791750650.061733471] [move_arm_node]: Move complete.
+[INFO] [1791750650.061894250] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750652.862285432] [move_arm_node]: Move complete.
+[INFO] [1791750652.862517311] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750653.962015681] [move_arm_node]: Move complete.
+[INFO] [1791750653.962208482] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750654.661057715] [move_arm_node]: Gripper done
+[INFO] [1791750654.661198953] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750655.762612492] [move_arm_node]: Move complete.
+[INFO] [1791750655.762838643] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750657.761573663] [move_arm_node]: Move complete.
+Detected: 5x capacitor
+Target at z=13.7 mm would grasp at 4.4 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 442.8055666067794, -0.5410750938418529, 13.701588120055785 (capacitor)
+Gripper yaw: 90 deg, opening 35 mm
+[INFO] [1791750658.103804834] [move_arm_node]: Cartesian move to (432.00880014574966, 13.13824096478736, 86.0), yaw 90 deg
+[INFO] [1791750660.161731649] [move_arm_node]: Move complete.
+[INFO] [1791750660.161913367] [move_arm_node]: Setting gripper to 354
+[INFO] [1791750660.641335584] [move_arm_node]: Gripper done
+[INFO] [1791750660.641480754] [move_arm_node]: Cartesian move to (432.00880014574966, 13.13824096478736, 6.0), yaw 90 deg
+[INFO] [1791750662.061321200] [move_arm_node]: Move complete.
+[INFO] [1791750662.061468739] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750662.769576076] [move_arm_node]: Gripper done
+[INFO] [1791750662.769713938] [move_arm_node]: Cartesian move to (432.00880014574966, 13.13824096478736, 86.0), yaw 90 deg
+[INFO] [1791750663.761783055] [move_arm_node]: Move complete.
+[INFO] [1791750663.761946248] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750666.761822101] [move_arm_node]: Move complete.
+[INFO] [1791750666.761981765] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750667.861727145] [move_arm_node]: Move complete.
+[INFO] [1791750667.861873213] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750668.453336914] [move_arm_node]: Gripper done
+[INFO] [1791750668.453504883] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750669.461464105] [move_arm_node]: Move complete.
+[INFO] [1791750669.461623299] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750671.461433791] [move_arm_node]: Move complete.
+Detected: 4x capacitor
+Target at z=15.2 mm would grasp at 3.9 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Target at z=10.6 mm would grasp at -2.2 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 325.04602294953287, 66.65037139502856, 10.641839379700924 (capacitor)
+Gripper yaw: 60 deg, opening 31 mm
+[INFO] [1791750672.013669179] [move_arm_node]: Cartesian move to (312.8754301672278, 80.61534283915778, 86.0), yaw 60 deg
+[INFO] [1791750673.762872871] [move_arm_node]: Move complete.
+[INFO] [1791750673.763022407] [move_arm_node]: Setting gripper to 308
+[INFO] [1791750674.137284968] [move_arm_node]: Gripper done
+[INFO] [1791750674.137425176] [move_arm_node]: Cartesian move to (312.8754301672278, 80.61534283915778, 6.0), yaw 60 deg
+[INFO] [1791750675.661936911] [move_arm_node]: Move complete.
+[INFO] [1791750675.662086216] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750676.361686602] [move_arm_node]: Gripper done
+[INFO] [1791750676.361849062] [move_arm_node]: Cartesian move to (312.8754301672278, 80.61534283915778, 86.0), yaw 60 deg
+[INFO] [1791750677.461716096] [move_arm_node]: Move complete.
+[INFO] [1791750677.461876444] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750679.962143550] [move_arm_node]: Move complete.
+[INFO] [1791750679.962335208] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750681.062176972] [move_arm_node]: Move complete.
+[INFO] [1791750681.062333283] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750681.543358073] [move_arm_node]: Gripper done
+[INFO] [1791750681.543501580] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750682.562771737] [move_arm_node]: Move complete.
+[INFO] [1791750682.562949982] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750684.563178161] [move_arm_node]: Move complete.
+Detected: 4x capacitor
+Target at z=14.6 mm would grasp at 4.2 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Target at z=4.4 mm would grasp at -10.0 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 343.27651145314366, 15.087109550515343, 4.3541849570327695 (capacitor)
+Gripper yaw: 0 deg, opening 23 mm
+[INFO] [1791750685.084131475] [move_arm_node]: Cartesian move to (332.8819979095425, 27.02062520831028, 86.0), yaw 0 deg
+[INFO] [1791750686.861989859] [move_arm_node]: Move complete.
+[INFO] [1791750686.862152353] [move_arm_node]: Setting gripper to 230
+[INFO] [1791750687.234964604] [move_arm_node]: Gripper done
+[INFO] [1791750687.235190949] [move_arm_node]: Cartesian move to (332.8819979095425, 27.02062520831028, 6.0), yaw 0 deg
+[INFO] [1791750688.761794726] [move_arm_node]: Move complete.
+[INFO] [1791750688.761944092] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750689.463981017] [move_arm_node]: Gripper done
+[INFO] [1791750689.464136113] [move_arm_node]: Cartesian move to (332.8819979095425, 27.02062520831028, 86.0), yaw 0 deg
+[INFO] [1791750690.562067525] [move_arm_node]: Move complete.
+[INFO] [1791750690.562238720] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750692.463719035] [move_arm_node]: Move complete.
+[INFO] [1791750692.463882831] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750693.561489562] [move_arm_node]: Move complete.
+[INFO] [1791750693.561637507] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750694.150914923] [move_arm_node]: Gripper done
+[INFO] [1791750694.151063469] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750695.161732993] [move_arm_node]: Move complete.
+[INFO] [1791750695.161890200] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750697.161367757] [move_arm_node]: Move complete.
+Detected: 3x capacitor
+Target at z=14.6 mm would grasp at 4.2 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Every part left has a neighbour in the way - taking the tallest one anyway.
+Captured target in main: 443.0232602825168, 20.728393020832904, 14.592116181701197 (capacitor)
+Gripper yaw: 75 deg, opening 34 mm
+[INFO] [1791750697.697680213] [move_arm_node]: Cartesian move to (432.3694873522922, 33.38873524888905, 86.0), yaw 75 deg
+[INFO] [1791750699.661846483] [move_arm_node]: Move complete.
+[INFO] [1791750699.661999591] [move_arm_node]: Setting gripper to 335
+[INFO] [1791750700.148882645] [move_arm_node]: Gripper done
+[INFO] [1791750700.149037792] [move_arm_node]: Cartesian move to (432.3694873522922, 33.38873524888905, 6.0), yaw 75 deg
+[INFO] [1791750701.561724411] [move_arm_node]: Move complete.
+[INFO] [1791750701.561877226] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750702.153273460] [move_arm_node]: Gripper done
+[INFO] [1791750702.153421257] [move_arm_node]: Cartesian move to (432.3694873522922, 33.38873524888905, 86.0), yaw 75 deg
+[INFO] [1791750703.061967553] [move_arm_node]: Move complete.
+[INFO] [1791750703.062126906] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750705.862289660] [move_arm_node]: Move complete.
+[INFO] [1791750705.862451127] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750706.961696238] [move_arm_node]: Move complete.
+[INFO] [1791750706.961840746] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750707.661956388] [move_arm_node]: Gripper done
+[INFO] [1791750707.662096147] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750708.761793880] [move_arm_node]: Move complete.
+[INFO] [1791750708.761944118] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750710.761343055] [move_arm_node]: Move complete.
+Detected: 1x capacitor
+Target at z=15.2 mm would grasp at 5.3 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 446.8492190346125, 41.774801176522324, 15.223831315019975 (capacitor)
+Gripper yaw: -30 deg, opening 23 mm
+[INFO] [1791750711.006167091] [move_arm_node]: Cartesian move to (435.2525327009611, 53.72713129415994, 86.0), yaw -30 deg
+[INFO] [1791750712.962492807] [move_arm_node]: Move complete.
+[INFO] [1791750712.962650843] [move_arm_node]: Setting gripper to 233
+[INFO] [1791750713.334912698] [move_arm_node]: Gripper done
+[INFO] [1791750713.335066735] [move_arm_node]: Cartesian move to (435.2525327009611, 53.72713129415994, 6.0), yaw -30 deg
+[INFO] [1791750714.762219413] [move_arm_node]: Move complete.
+[INFO] [1791750714.762369806] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750715.241370868] [move_arm_node]: Gripper done
+[INFO] [1791750715.241521277] [move_arm_node]: Cartesian move to (435.2525327009611, 53.72713129415994, 86.0), yaw -30 deg
+[INFO] [1791750716.161546558] [move_arm_node]: Move complete.
+[INFO] [1791750716.161704008] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750718.062259360] [move_arm_node]: Move complete.
+[INFO] [1791750718.062420692] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750719.162017622] [move_arm_node]: Move complete.
+[INFO] [1791750719.162178226] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750719.858604578] [move_arm_node]: Gripper done
+[INFO] [1791750719.858762835] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750720.962009034] [move_arm_node]: Move complete.
+[INFO] [1791750720.962164589] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750722.961785466] [move_arm_node]: Move complete.
+Detected: 2x capacitor
+Trial 1: 10 detected, 10 located, 10 placed, 0 empty grasp(s), 0 blocked descent(s), 0 left (no free angle), 0 failed move, 0 still on the board.
+How did it go? Type a number, or Enter for 0.
+  Components on the table that the camera did NOT detect? [0] 
+  Detections that were not a real component? [0] 
+  Picks logged as placed where the part did not reach a bin? [0] 
+  Parts released outside the correct bin? [0] 
+  Neighbouring components knocked or moved? [0] 
+  Note (optional): 
+
+1 trial(s) done this session: 10 placed of 10 located in total.
+Press 's' for trial 2, 'q' to quit.
+Detected: 10x capacitor
+
+===== Trial 2 =====
+[INFO] [1791750765.439874339] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750766.669516855] [move_arm_node]: Gripper done
+Captured target in main: 429.67956644517, -21.820459570551538, 40.23236756766474 (capacitor)
+Gripper yaw: 0 deg, opening 40 mm
+[INFO] [1791750766.931702458] [move_arm_node]: Cartesian move to (422.19326174252035, -8.520776764559503, 123.28243054993547), yaw 0 deg
+[INFO] [1791750768.762219024] [move_arm_node]: Move complete.
+[INFO] [1791750768.762368194] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750769.994272607] [move_arm_node]: Gripper done
+[INFO] [1791750769.994434746] [move_arm_node]: Cartesian move to (422.19326174252035, -8.520776764559503, 43.28243054993546), yaw 0 deg
+[INFO] [1791750771.462254093] [move_arm_node]: Move complete.
+[INFO] [1791750771.462400620] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750772.271307232] [move_arm_node]: Gripper done
+[INFO] [1791750772.271449655] [move_arm_node]: Cartesian move to (422.19326174252035, -8.520776764559503, 123.28243054993547), yaw 0 deg
+[INFO] [1791750773.262145194] [move_arm_node]: Move complete.
+[INFO] [1791750773.262320260] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750775.261874788] [move_arm_node]: Move complete.
+[INFO] [1791750775.262036256] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750776.361745488] [move_arm_node]: Move complete.
+[INFO] [1791750776.361895594] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750776.847675266] [move_arm_node]: Gripper done
+[INFO] [1791750776.847822290] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750777.862511415] [move_arm_node]: Move complete.
+[INFO] [1791750777.862668581] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750779.861602198] [move_arm_node]: Move complete.
+Detected: 9x capacitor
+Captured target in main: 407.7387227506694, 2.259499070188145, 27.543940517798404 (capacitor)
+Gripper yaw: 60 deg, opening 30 mm
+[INFO] [1791750780.268535510] [move_arm_node]: Cartesian move to (398.13208505083566, 14.30420932844468, 100.9165283081766), yaw 60 deg
+[INFO] [1791750782.062325530] [move_arm_node]: Move complete.
+[INFO] [1791750782.062484929] [move_arm_node]: Setting gripper to 296
+[INFO] [1791750782.548557265] [move_arm_node]: Gripper done
+[INFO] [1791750782.548699088] [move_arm_node]: Cartesian move to (398.13208505083566, 14.30420932844468, 20.916528308176595), yaw 60 deg
+[INFO] [1791750783.962334209] [move_arm_node]: Move complete.
+[INFO] [1791750783.962493047] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750784.553311692] [move_arm_node]: Gripper done
+[INFO] [1791750784.553471206] [move_arm_node]: Cartesian move to (398.13208505083566, 14.30420932844468, 100.9165283081766), yaw 60 deg
+[INFO] [1791750785.461931525] [move_arm_node]: Move complete.
+[INFO] [1791750785.462082616] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750788.061913019] [move_arm_node]: Move complete.
+[INFO] [1791750788.062094393] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750789.161867403] [move_arm_node]: Move complete.
+[INFO] [1791750789.162017175] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750789.643209795] [move_arm_node]: Gripper done
+[INFO] [1791750789.643360099] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750790.661941543] [move_arm_node]: Move complete.
+[INFO] [1791750790.662147801] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750792.662408638] [move_arm_node]: Move complete.
+Detected: 9x capacitor
+Duplicate detection of 'capacitor' at (420.56651903056877, -44.85567153330615, 33.85068881218961), skipping...
+Captured target in main: 404.06096602084637, 40.88973308223762, 29.925515469320317 (capacitor)
+Gripper yaw: 75 deg, opening 33 mm
+[INFO] [1791750793.054616797] [move_arm_node]: Cartesian move to (396.09152577882713, 55.658743918936274, 104.76925653008763), yaw 75 deg
+[INFO] [1791750794.861970809] [move_arm_node]: Move complete.
+[INFO] [1791750794.862126845] [move_arm_node]: Setting gripper to 327
+[INFO] [1791750795.347909035] [move_arm_node]: Gripper done
+[INFO] [1791750795.348048503] [move_arm_node]: Cartesian move to (396.09152577882713, 55.658743918936274, 24.769256530087638), yaw 75 deg
+[INFO] [1791750796.762008044] [move_arm_node]: Move complete.
+[INFO] [1791750796.762165409] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750797.242207582] [move_arm_node]: Gripper done
+[INFO] [1791750797.242359734] [move_arm_node]: Cartesian move to (396.09152577882713, 55.658743918936274, 104.76925653008763), yaw 75 deg
+[INFO] [1791750798.161391306] [move_arm_node]: Move complete.
+[INFO] [1791750798.161564212] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750800.962146436] [move_arm_node]: Move complete.
+[INFO] [1791750800.962311113] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750802.061988552] [move_arm_node]: Move complete.
+[INFO] [1791750802.062192224] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750802.548561386] [move_arm_node]: Gripper done
+[INFO] [1791750802.548701943] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750803.562046059] [move_arm_node]: Move complete.
+[INFO] [1791750803.562219206] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750805.562029944] [move_arm_node]: Move complete.
+Detected: 8x capacitor
+Duplicate detection of 'capacitor' at (420.5122861844918, -44.82836171802976, 33.82683593273506), skipping...
+Captured target in main: 417.703228808245, -45.599345050201215, 27.721235277601895 (capacitor)
+Gripper yaw: 0 deg, opening 33 mm
+[INFO] [1791750806.008928956] [move_arm_node]: Cartesian move to (406.6079867902397, -33.14851076473836, 98.62952219210746), yaw 0 deg
+[INFO] [1791750807.862065661] [move_arm_node]: Move complete.
+[INFO] [1791750807.862226931] [move_arm_node]: Setting gripper to 328
+[INFO] [1791750808.342994578] [move_arm_node]: Gripper done
+[INFO] [1791750808.343191189] [move_arm_node]: Cartesian move to (406.6079867902397, -33.14851076473836, 18.629522192107466), yaw 0 deg
+[INFO] [1791750809.762700655] [move_arm_node]: Move complete.
+[INFO] [1791750809.762854519] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750810.356862793] [move_arm_node]: Gripper done
+[INFO] [1791750810.357007598] [move_arm_node]: Cartesian move to (406.6079867902397, -33.14851076473836, 98.62952219210746), yaw 0 deg
+[INFO] [1791750811.361990728] [move_arm_node]: Move complete.
+[INFO] [1791750811.362145482] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750813.464054447] [move_arm_node]: Move complete.
+[INFO] [1791750813.464222725] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750814.562253561] [move_arm_node]: Move complete.
+[INFO] [1791750814.562411840] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750815.045243859] [move_arm_node]: Gripper done
+[INFO] [1791750815.045398321] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750816.062040776] [move_arm_node]: Move complete.
+[INFO] [1791750816.062205253] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750818.062227832] [move_arm_node]: Move complete.
+Detected: 7x capacitor
+Target at z=16.1 mm would grasp at 3.4 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 316.8159870746569, -44.126072335364874, 16.118245354145856 (capacitor)
+Gripper yaw: 15 deg, opening 23 mm
+[INFO] [1791750818.467934086] [move_arm_node]: Cartesian move to (305.02088852967466, -32.702729482701926, 86.0), yaw 15 deg
+[INFO] [1791750820.162219554] [move_arm_node]: Move complete.
+[INFO] [1791750820.162385187] [move_arm_node]: Setting gripper to 234
+[INFO] [1791750820.538805357] [move_arm_node]: Gripper done
+[INFO] [1791750820.538992325] [move_arm_node]: Cartesian move to (305.02088852967466, -32.702729482701926, 6.0), yaw 15 deg
+[INFO] [1791750822.162637780] [move_arm_node]: Move complete.
+[INFO] [1791750822.162844038] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750822.548505924] [move_arm_node]: Gripper done
+[INFO] [1791750822.548652247] [move_arm_node]: Cartesian move to (305.02088852967466, -32.702729482701926, 86.0), yaw 15 deg
+[INFO] [1791750823.562391489] [move_arm_node]: Move complete.
+[INFO] [1791750823.562545802] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750825.762550211] [move_arm_node]: Move complete.
+[INFO] [1791750825.762717721] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750826.862194961] [move_arm_node]: Move complete.
+[INFO] [1791750826.862344368] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750827.461533754] [move_arm_node]: Gripper done
+[INFO] [1791750827.461677662] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750828.562132393] [move_arm_node]: Move complete.
+[INFO] [1791750828.562298627] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750830.562241294] [move_arm_node]: Move complete.
+Detected: 6x capacitor
+Target at z=15.4 mm would grasp at 4.2 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 348.5376597730639, -24.584011805073718, 15.445752581032924 (capacitor)
+Gripper yaw: 45 deg, opening 26 mm
+[INFO] [1791750831.002975274] [move_arm_node]: Cartesian move to (337.21451440378377, -12.348585949077442, 86.0), yaw 45 deg
+[INFO] [1791750832.761722364] [move_arm_node]: Move complete.
+[INFO] [1791750832.761868411] [move_arm_node]: Setting gripper to 259
+[INFO] [1791750833.241979000] [move_arm_node]: Gripper done
+[INFO] [1791750833.242130520] [move_arm_node]: Cartesian move to (337.21451440378377, -12.348585949077442, 6.0), yaw 45 deg
+[INFO] [1791750834.762042091] [move_arm_node]: Move complete.
+[INFO] [1791750834.762196640] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750835.246585859] [move_arm_node]: Gripper done
+[INFO] [1791750835.246729889] [move_arm_node]: Cartesian move to (337.21451440378377, -12.348585949077442, 86.0), yaw 45 deg
+[INFO] [1791750836.262261591] [move_arm_node]: Move complete.
+[INFO] [1791750836.262416070] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750838.763173496] [move_arm_node]: Move complete.
+[INFO] [1791750838.763383543] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750839.862043417] [move_arm_node]: Move complete.
+[INFO] [1791750839.862197532] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750840.451053792] [move_arm_node]: Gripper done
+[INFO] [1791750840.451199818] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750841.464273253] [move_arm_node]: Move complete.
+[INFO] [1791750841.464434310] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750843.462164406] [move_arm_node]: Move complete.
+Detected: 5x capacitor
+Captured target in main: 382.18450941276154, -5.574920724869231, 17.10927703265941 (capacitor)
+Gripper yaw: 90 deg, opening 30 mm
+[INFO] [1791750843.810593256] [move_arm_node]: Cartesian move to (370.4657815389044, 7.3267197901182435, 87.22471038000337), yaw 90 deg
+[INFO] [1791750845.862265348] [move_arm_node]: Move complete.
+[INFO] [1791750845.862430499] [move_arm_node]: Setting gripper to 299
+[INFO] [1791750846.346569794] [move_arm_node]: Gripper done
+[INFO] [1791750846.346715765] [move_arm_node]: Cartesian move to (370.4657815389044, 7.3267197901182435, 7.224710380003376), yaw 90 deg
+[INFO] [1791750847.862250239] [move_arm_node]: Move complete.
+[INFO] [1791750847.862408274] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750848.568809804] [move_arm_node]: Gripper done
+[INFO] [1791750848.568960127] [move_arm_node]: Cartesian move to (370.4657815389044, 7.3267197901182435, 87.22471038000337), yaw 90 deg
+[INFO] [1791750849.661752505] [move_arm_node]: Move complete.
+[INFO] [1791750849.661943233] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750852.762218884] [move_arm_node]: Move complete.
+[INFO] [1791750852.762385785] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750853.862643205] [move_arm_node]: Move complete.
+[INFO] [1791750853.862821866] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750854.562051756] [move_arm_node]: Gripper done
+[INFO] [1791750854.562212293] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750855.662362848] [move_arm_node]: Move complete.
+[INFO] [1791750855.662531382] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750857.662416333] [move_arm_node]: Move complete.
+Detected: 4x capacitor
+Target at z=14.9 mm would grasp at 3.5 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 382.2513070803101, 23.22371217702035, 14.911480945221435 (capacitor)
+Gripper yaw: -15 deg, opening 26 mm
+[INFO] [1791750858.068507339] [move_arm_node]: Cartesian move to (370.01000223398046, 35.79227828707538, 86.0), yaw -15 deg
+[INFO] [1791750859.862382230] [move_arm_node]: Move complete.
+[INFO] [1791750859.862529848] [move_arm_node]: Setting gripper to 256
+[INFO] [1791750860.238728248] [move_arm_node]: Gripper done
+[INFO] [1791750860.238872305] [move_arm_node]: Cartesian move to (370.01000223398046, 35.79227828707538, 6.0), yaw -15 deg
+[INFO] [1791750861.762556030] [move_arm_node]: Move complete.
+[INFO] [1791750861.762722543] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750862.367467374] [move_arm_node]: Gripper done
+[INFO] [1791750862.367619134] [move_arm_node]: Cartesian move to (370.01000223398046, 35.79227828707538, 86.0), yaw -15 deg
+[INFO] [1791750863.462749317] [move_arm_node]: Move complete.
+[INFO] [1791750863.462917751] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750865.362686238] [move_arm_node]: Move complete.
+[INFO] [1791750865.362880846] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750866.462441118] [move_arm_node]: Move complete.
+[INFO] [1791750866.462595183] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750867.048730545] [move_arm_node]: Gripper done
+[INFO] [1791750867.048885326] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750868.062078926] [move_arm_node]: Move complete.
+[INFO] [1791750868.062245100] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750870.062769052] [move_arm_node]: Move complete.
+Detected: 5x capacitor
+Target at z=9.3 mm would grasp at -1.0 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 323.04395999868666, 16.204998135978503, 9.33444208165085 (capacitor)
+Gripper yaw: 60 deg, opening 23 mm
+[INFO] [1791750870.373649230] [move_arm_node]: Cartesian move to (310.66208900126327, 28.509056818942756, 86.0), yaw 60 deg
+[INFO] [1791750872.062487265] [move_arm_node]: Move complete.
+[INFO] [1791750872.062641765] [move_arm_node]: Setting gripper to 231
+[INFO] [1791750872.435881716] [move_arm_node]: Gripper done
+[INFO] [1791750872.436032651] [move_arm_node]: Cartesian move to (310.66208900126327, 28.509056818942756, 6.0), yaw 60 deg
+[INFO] [1791750874.063867977] [move_arm_node]: Move complete.
+[INFO] [1791750874.064049580] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750874.548671999] [move_arm_node]: Gripper done
+[INFO] [1791750874.548819194] [move_arm_node]: Cartesian move to (310.66208900126327, 28.509056818942756, 86.0), yaw 60 deg
+[INFO] [1791750875.561848648] [move_arm_node]: Move complete.
+[INFO] [1791750875.562016970] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750878.162683026] [move_arm_node]: Move complete.
+[INFO] [1791750878.162862228] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750879.263927507] [move_arm_node]: Move complete.
+[INFO] [1791750879.264092892] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750879.855165173] [move_arm_node]: Gripper done
+[INFO] [1791750879.855318650] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750880.862271522] [move_arm_node]: Move complete.
+[INFO] [1791750880.862435312] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750882.862177379] [move_arm_node]: Move complete.
+Detected: 2x capacitor
+Target at z=4.8 mm would grasp at -9.9 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 330.59321205832896, 51.370650713166434, 4.770476985430538 (capacitor)
+Gripper yaw: 0 deg, opening 22 mm
+[INFO] [1791750883.096055612] [move_arm_node]: Cartesian move to (319.6759757201946, 63.47486667984207, 86.0), yaw 0 deg
+[INFO] [1791750884.862426353] [move_arm_node]: Move complete.
+[INFO] [1791750884.862596213] [move_arm_node]: Setting gripper to 220
+[INFO] [1791750885.349514383] [move_arm_node]: Gripper done
+[INFO] [1791750885.349663121] [move_arm_node]: Cartesian move to (319.6759757201946, 63.47486667984207, 6.0), yaw 0 deg
+[INFO] [1791750886.862591116] [move_arm_node]: Move complete.
+[INFO] [1791750886.862742514] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750887.450772498] [move_arm_node]: Gripper done
+[INFO] [1791750887.450937013] [move_arm_node]: Cartesian move to (319.6759757201946, 63.47486667984207, 86.0), yaw 0 deg
+[INFO] [1791750888.462411434] [move_arm_node]: Move complete.
+[INFO] [1791750888.462574876] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750890.162525871] [move_arm_node]: Move complete.
+[INFO] [1791750890.162695458] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750891.262035349] [move_arm_node]: Move complete.
+[INFO] [1791750891.262189186] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750891.853429791] [move_arm_node]: Gripper done
+[INFO] [1791750891.853572150] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750892.862519482] [move_arm_node]: Move complete.
+[INFO] [1791750892.862693181] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750894.862524217] [move_arm_node]: Move complete.
+Detected: 1x capacitor
+Trial 2: 10 detected, 10 located, 10 placed, 0 empty grasp(s), 0 blocked descent(s), 0 left (no free angle), 0 failed move, 0 still on the board.
+How did it go? Type a number, or Enter for 0.
+  Components on the table that the camera did NOT detect? [0] 
+  Detections that were not a real component? [0] 
+  Picks logged as placed where the part did not reach a bin? [0] 
+  Parts released outside the correct bin? [0] 
+  Neighbouring components knocked or moved? [0] 
+  Note (optional): 
+
+2 trial(s) done this session: 20 placed of 20 located in total.
+Press 's' for trial 3, 'q' to quit.
+Detected: 10x capacitor, 1x transformer
+Duplicate detection of 'transformer' at (375.4394659514308, -11.851959001856038, 32.90016227190029), skipping...
+
+===== Trial 3 =====
+[INFO] [1791750935.878895900] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750937.120311265] [move_arm_node]: Gripper done
+Captured target in main: 433.97378742370006, 29.33521624527144, 38.248645529984415 (capacitor)
+Gripper yaw: -15 deg, opening 40 mm
+[INFO] [1791750937.374288559] [move_arm_node]: Cartesian move to (426.75701527379323, 44.1138671712432, 122.35030552572272), yaw -15 deg
+[INFO] [1791750939.262086614] [move_arm_node]: Move complete.
+[INFO] [1791750939.262251654] [move_arm_node]: Setting gripper to 399
+[INFO] [1791750940.502989936] [move_arm_node]: Gripper done
+[INFO] [1791750940.503210180] [move_arm_node]: Cartesian move to (426.75701527379323, 44.1138671712432, 42.35030552572271), yaw -15 deg
+[INFO] [1791750941.962099799] [move_arm_node]: Move complete.
+[INFO] [1791750941.962260500] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750942.555948486] [move_arm_node]: Gripper done
+[INFO] [1791750942.556098653] [move_arm_node]: Cartesian move to (426.75701527379323, 44.1138671712432, 122.35030552572272), yaw -15 deg
+[INFO] [1791750943.462410292] [move_arm_node]: Move complete.
+[INFO] [1791750943.462577963] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750945.362272298] [move_arm_node]: Move complete.
+[INFO] [1791750945.362450389] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750946.462437359] [move_arm_node]: Move complete.
+[INFO] [1791750946.462588198] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750946.946265123] [move_arm_node]: Gripper done
+[INFO] [1791750946.947435278] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750947.962182342] [move_arm_node]: Move complete.
+[INFO] [1791750947.962344216] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750949.962983148] [move_arm_node]: Move complete.
+Detected: 10x capacitor
+Duplicate detection of 'capacitor' at (379.2478521837031, -10.155655978629163, 38.81239055533092), skipping...
+Captured target in main: 310.0377779146975, -46.77918472613807, 28.395471880878155 (capacitor)
+Gripper yaw: -30 deg, opening 27 mm
+[INFO] [1791750950.409018709] [move_arm_node]: Cartesian move to (300.3843450708516, -34.7781694432624, 100.00899941712096), yaw -30 deg
+[INFO] [1791750952.061841026] [move_arm_node]: Move complete.
+[INFO] [1791750952.062037980] [move_arm_node]: Setting gripper to 273
+[INFO] [1791750952.434182100] [move_arm_node]: Gripper done
+[INFO] [1791750952.434324307] [move_arm_node]: Cartesian move to (300.3843450708516, -34.7781694432624, 20.00899941712096), yaw -30 deg
+[INFO] [1791750954.062822238] [move_arm_node]: Move complete.
+[INFO] [1791750954.062973148] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750954.648886186] [move_arm_node]: Gripper done
+[INFO] [1791750954.649037375] [move_arm_node]: Cartesian move to (300.3843450708516, -34.7781694432624, 100.00899941712096), yaw -30 deg
+[INFO] [1791750955.662845067] [move_arm_node]: Move complete.
+[INFO] [1791750955.663009618] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750957.662080167] [move_arm_node]: Move complete.
+[INFO] [1791750957.662241329] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750958.763660213] [move_arm_node]: Move complete.
+[INFO] [1791750958.763826166] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750959.248352570] [move_arm_node]: Gripper done
+[INFO] [1791750959.248656617] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750960.262618640] [move_arm_node]: Move complete.
+[INFO] [1791750960.262776258] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750962.262170113] [move_arm_node]: Move complete.
+Detected: 9x capacitor
+Duplicate detection of 'capacitor' at (379.2169803996318, -10.227209056989803, 38.75881859137564), skipping...
+Captured target in main: 376.2980698982769, -12.0048497703414, 32.11726782850827 (capacitor)
+Gripper yaw: -15 deg, opening 34 mm
+[INFO] [1791750962.786303683] [move_arm_node]: Cartesian move to (369.2079925105968, 0.7283066816647761, 105.92871177074478), yaw -15 deg
+[INFO] [1791750964.564580717] [move_arm_node]: Move complete.
+[INFO] [1791750964.564768824] [move_arm_node]: Setting gripper to 338
+[INFO] [1791750965.047149615] [move_arm_node]: Gripper done
+[INFO] [1791750965.047297966] [move_arm_node]: Cartesian move to (369.2079925105968, 0.7283066816647761, 25.928711770744783), yaw -15 deg
+[INFO] [1791750966.562856022] [move_arm_node]: Move complete.
+[INFO] [1791750966.563028733] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750967.046555999] [move_arm_node]: Gripper done
+[INFO] [1791750967.046706584] [move_arm_node]: Cartesian move to (369.2079925105968, 0.7283066816647761, 105.92871177074478), yaw -15 deg
+[INFO] [1791750968.061893585] [move_arm_node]: Move complete.
+[INFO] [1791750968.062052503] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750969.962201913] [move_arm_node]: Move complete.
+[INFO] [1791750969.962358732] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750971.062195256] [move_arm_node]: Move complete.
+[INFO] [1791750971.062350292] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750971.541838792] [move_arm_node]: Gripper done
+[INFO] [1791750971.541990807] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750972.561946468] [move_arm_node]: Move complete.
+[INFO] [1791750972.562148101] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750974.562136266] [move_arm_node]: Move complete.
+Detected: 7x capacitor
+Captured target in main: 438.0277038407131, -15.782124716912344, 24.118774057041993 (capacitor)
+Gripper yaw: -30 deg, opening 30 mm
+[INFO] [1791750974.922699173] [move_arm_node]: Cartesian move to (426.286286959524, -4.625592860913638, 103.1009180453774), yaw -30 deg
+[INFO] [1791750976.761962807] [move_arm_node]: Move complete.
+[INFO] [1791750976.762114773] [move_arm_node]: Setting gripper to 302
+[INFO] [1791750977.347226833] [move_arm_node]: Gripper done
+[INFO] [1791750977.347455304] [move_arm_node]: Cartesian move to (426.286286959524, -4.625592860913638, 23.10091804537739), yaw -30 deg
+[INFO] [1791750978.761642841] [move_arm_node]: Move complete.
+[INFO] [1791750978.761802970] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750979.249775357] [move_arm_node]: Gripper done
+[INFO] [1791750979.249940673] [move_arm_node]: Cartesian move to (426.286286959524, -4.625592860913638, 103.1009180453774), yaw -30 deg
+[INFO] [1791750980.162034220] [move_arm_node]: Move complete.
+[INFO] [1791750980.162196700] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750982.162042727] [move_arm_node]: Move complete.
+[INFO] [1791750982.162199885] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750983.262052842] [move_arm_node]: Move complete.
+[INFO] [1791750983.262236204] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750983.748207022] [move_arm_node]: Gripper done
+[INFO] [1791750983.748557710] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750984.761958395] [move_arm_node]: Move complete.
+[INFO] [1791750984.762234669] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750986.762212676] [move_arm_node]: Move complete.
+Detected: 6x capacitor
+Target at z=11.9 mm would grasp at 2.4 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 328.9468464560723, 46.9448463863692, 11.944308148703842 (capacitor)
+Gripper yaw: 30 deg, opening 22 mm
+[INFO] [1791750987.131491104] [move_arm_node]: Cartesian move to (316.6677801327562, 59.82927959469742, 86.0), yaw 30 deg
+[INFO] [1791750988.862581848] [move_arm_node]: Move complete.
+[INFO] [1791750988.862732183] [move_arm_node]: Setting gripper to 225
+[INFO] [1791750989.347606892] [move_arm_node]: Gripper done
+[INFO] [1791750989.347752142] [move_arm_node]: Cartesian move to (316.6677801327562, 59.82927959469742, 6.0), yaw 30 deg
+[INFO] [1791750990.962372871] [move_arm_node]: Move complete.
+[INFO] [1791750990.962522546] [move_arm_node]: Setting gripper to 0
+[INFO] [1791750991.662689710] [move_arm_node]: Gripper done
+[INFO] [1791750991.662845783] [move_arm_node]: Cartesian move to (316.6677801327562, 59.82927959469742, 86.0), yaw 30 deg
+[INFO] [1791750992.762233583] [move_arm_node]: Move complete.
+[INFO] [1791750992.762389798] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750994.862476108] [move_arm_node]: Move complete.
+[INFO] [1791750994.862631322] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791750995.962190321] [move_arm_node]: Move complete.
+[INFO] [1791750995.962342041] [move_arm_node]: Setting gripper to 400
+[INFO] [1791750996.557011157] [move_arm_node]: Gripper done
+[INFO] [1791750996.557173168] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791750997.662303273] [move_arm_node]: Move complete.
+[INFO] [1791750997.662461840] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791750999.662372685] [move_arm_node]: Move complete.
+Detected: 5x capacitor
+Target at z=17.0 mm would grasp at 3.0 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 395.23366177217537, -61.401581913648364, 16.98674360165786 (capacitor)
+Gripper yaw: 0 deg, opening 29 mm
+[INFO] [1791750999.980678921] [move_arm_node]: Cartesian move to (385.70756321009065, -50.65939201120501, 86.0), yaw 0 deg
+[INFO] [1791751001.862636225] [move_arm_node]: Move complete.
+[INFO] [1791751001.862809119] [move_arm_node]: Setting gripper to 293
+[INFO] [1791751002.343268457] [move_arm_node]: Gripper done
+[INFO] [1791751002.343410822] [move_arm_node]: Cartesian move to (385.70756321009065, -50.65939201120501, 6.0), yaw 0 deg
+[INFO] [1791751003.762645277] [move_arm_node]: Move complete.
+[INFO] [1791751003.762793013] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751004.360085578] [move_arm_node]: Gripper done
+[INFO] [1791751004.360244348] [move_arm_node]: Cartesian move to (385.70756321009065, -50.65939201120501, 86.0), yaw 0 deg
+[INFO] [1791751005.362282142] [move_arm_node]: Move complete.
+[INFO] [1791751005.362435508] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751007.462547375] [move_arm_node]: Move complete.
+[INFO] [1791751007.462705073] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751008.562367245] [move_arm_node]: Move complete.
+[INFO] [1791751008.562525297] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751009.048044022] [move_arm_node]: Gripper done
+[INFO] [1791751009.048183270] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751010.062601143] [move_arm_node]: Move complete.
+[INFO] [1791751010.062771959] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751012.062199376] [move_arm_node]: Move complete.
+Detected: 5x capacitor
+Target at z=12.5 mm would grasp at 0.2 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 410.3239408513815, 24.728598232681808, 12.530051889365513 (capacitor)
+Gripper yaw: 45 deg, opening 24 mm
+[INFO] [1791751012.369726383] [move_arm_node]: Cartesian move to (399.8577663859353, 36.746940442469196, 86.0), yaw 45 deg
+[INFO] [1791751014.262179377] [move_arm_node]: Move complete.
+[INFO] [1791751014.262326614] [move_arm_node]: Setting gripper to 239
+[INFO] [1791751014.856408629] [move_arm_node]: Gripper done
+[INFO] [1791751014.856544630] [move_arm_node]: Cartesian move to (399.8577663859353, 36.746940442469196, 6.0), yaw 45 deg
+[INFO] [1791751016.262524748] [move_arm_node]: Move complete.
+[INFO] [1791751016.262670304] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751016.958824408] [move_arm_node]: Gripper done
+[INFO] [1791751016.958981562] [move_arm_node]: Cartesian move to (399.8577663859353, 36.746940442469196, 86.0), yaw 45 deg
+[INFO] [1791751017.961886036] [move_arm_node]: Move complete.
+[INFO] [1791751017.962048860] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751020.364197057] [move_arm_node]: Move complete.
+[INFO] [1791751020.364374671] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751021.462375424] [move_arm_node]: Move complete.
+[INFO] [1791751021.462517946] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751022.162399023] [move_arm_node]: Gripper done
+[INFO] [1791751022.162542867] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751023.262029083] [move_arm_node]: Move complete.
+[INFO] [1791751023.262201967] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751025.262468026] [move_arm_node]: Move complete.
+Detected: 3x capacitor
+Target at z=16.9 mm would grasp at 4.0 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 422.1720266807919, -61.69976299503126, 16.882806671873198 (capacitor)
+Gripper yaw: 0 deg, opening 29 mm
+[INFO] [1791751025.519827519] [move_arm_node]: Cartesian move to (412.1310267790104, -50.77563420701489, 86.0), yaw 0 deg
+[INFO] [1791751027.362269993] [move_arm_node]: Move complete.
+[INFO] [1791751027.362429429] [move_arm_node]: Setting gripper to 289
+[INFO] [1791751027.734284079] [move_arm_node]: Gripper done
+[INFO] [1791751027.734433415] [move_arm_node]: Cartesian move to (412.1310267790104, -50.77563420701489, 6.0), yaw 0 deg
+[INFO] [1791751029.161852841] [move_arm_node]: Move complete.
+[INFO] [1791751029.162001529] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751029.862645858] [move_arm_node]: Gripper done
+[INFO] [1791751029.862787222] [move_arm_node]: Cartesian move to (412.1310267790104, -50.77563420701489, 86.0), yaw 0 deg
+[INFO] [1791751030.861972561] [move_arm_node]: Move complete.
+[INFO] [1791751030.862128025] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751032.962221364] [move_arm_node]: Move complete.
+[INFO] [1791751032.962385764] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751034.062200300] [move_arm_node]: Move complete.
+[INFO] [1791751034.062347806] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751034.649740151] [move_arm_node]: Gripper done
+[INFO] [1791751034.649887618] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751035.662171204] [move_arm_node]: Move complete.
+[INFO] [1791751035.662333285] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751037.662434840] [move_arm_node]: Move complete.
+Detected: 2x capacitor
+Target at z=8.6 mm would grasp at -4.4 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 347.5221377834551, 60.12802819090363, 8.552093580836917 (capacitor)
+Gripper yaw: 30 deg, opening 23 mm
+[INFO] [1791751037.895077403] [move_arm_node]: Cartesian move to (335.9633635821954, 71.91075125916097, 86.0), yaw 30 deg
+[INFO] [1791751039.662667549] [move_arm_node]: Move complete.
+[INFO] [1791751039.662827424] [move_arm_node]: Setting gripper to 227
+[INFO] [1791751040.040381248] [move_arm_node]: Gripper done
+[INFO] [1791751040.040604659] [move_arm_node]: Cartesian move to (335.9633635821954, 71.91075125916097, 6.0), yaw 30 deg
+[INFO] [1791751041.562126726] [move_arm_node]: Move complete.
+[INFO] [1791751041.562275733] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751042.258928200] [move_arm_node]: Gripper done
+[INFO] [1791751042.259079578] [move_arm_node]: Cartesian move to (335.9633635821954, 71.91075125916097, 86.0), yaw 30 deg
+[INFO] [1791751043.362494346] [move_arm_node]: Move complete.
+[INFO] [1791751043.362730773] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751045.462748943] [move_arm_node]: Move complete.
+[INFO] [1791751045.462941682] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751046.562485334] [move_arm_node]: Move complete.
+[INFO] [1791751046.562637172] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751047.264876037] [move_arm_node]: Gripper done
+[INFO] [1791751047.265024650] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751048.362973558] [move_arm_node]: Move complete.
+[INFO] [1791751048.363134828] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751050.362516228] [move_arm_node]: Move complete.
+Detected: 2x capacitor
+Target at z=4.9 mm would grasp at -9.4 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 366.4820391025633, 38.53325490269821, 4.915028403014499 (capacitor)
+Gripper yaw: 0 deg, opening 23 mm
+[INFO] [1791751050.585156759] [move_arm_node]: Cartesian move to (356.08895221306034, 50.74077597034233, 86.0), yaw 0 deg
+[INFO] [1791751052.362373592] [move_arm_node]: Move complete.
+[INFO] [1791751052.362525106] [move_arm_node]: Setting gripper to 230
+[INFO] [1791751052.734307239] [move_arm_node]: Gripper done
+[INFO] [1791751052.734450006] [move_arm_node]: Cartesian move to (356.08895221306034, 50.74077597034233, 6.0), yaw 0 deg
+[INFO] [1791751054.262020830] [move_arm_node]: Move complete.
+[INFO] [1791751054.262205012] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751054.743664744] [move_arm_node]: Gripper done
+[INFO] [1791751054.743879648] [move_arm_node]: Cartesian move to (356.08895221306034, 50.74077597034233, 86.0), yaw 0 deg
+[INFO] [1791751055.761733116] [move_arm_node]: Move complete.
+[INFO] [1791751055.761903725] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751057.562188827] [move_arm_node]: Move complete.
+[INFO] [1791751057.562348759] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751058.663340829] [move_arm_node]: Move complete.
+[INFO] [1791751058.663526083] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751059.468230725] [move_arm_node]: Gripper done
+[INFO] [1791751059.468393237] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751060.562295386] [move_arm_node]: Move complete.
+[INFO] [1791751060.562445632] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751062.564548550] [move_arm_node]: Move complete.
+Detected: nothing
+No valid detections above threshold or matching target class 'None'
+Trial 3: 11 detected, 10 located, 10 placed, 0 empty grasp(s), 0 blocked descent(s), 0 left (no free angle), 0 failed move, 0 still on the board.
+How did it go? Type a number, or Enter for 0.
+  Components on the table that the camera did NOT detect? [0] 
+  Detections that were not a real component? [0] 
+  Picks logged as placed where the part did not reach a bin? [0] 
+  Parts released outside the correct bin? [0] 
+  Neighbouring components knocked or moved? [0] 
+  Note (optional): 
+
+3 trial(s) done this session: 30 placed of 30 located in total.
+Press 's' for trial 4, 'q' to quit.
+Detected: 12x capacitor
+Duplicate detection of 'capacitor' at (392.40784127457624, 36.97680365602574, 30.61982023483506), skipping...
+Duplicate detection of 'capacitor' at (372.0296312717463, -46.21709683273008, 30.298609017313403), skipping...
+
+===== Trial 4 =====
+[INFO] [1791751126.827667530] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751128.054490689] [move_arm_node]: Gripper done
+Captured target in main: 427.6590719653707, -19.156072074555137, 41.388796369205785 (capacitor)
+Gripper yaw: 0 deg, opening 40 mm
+[INFO] [1791751128.304284717] [move_arm_node]: Cartesian move to (422.51343360087265, -4.784095803523819, 122.77938923113113), yaw 0 deg
+[INFO] [1791751130.161924085] [move_arm_node]: Move complete.
+[INFO] [1791751130.162076482] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751131.395575939] [move_arm_node]: Gripper done
+[INFO] [1791751131.395731505] [move_arm_node]: Cartesian move to (422.51343360087265, -4.784095803523819, 42.779389231131134), yaw 0 deg
+[INFO] [1791751132.862352144] [move_arm_node]: Move complete.
+[INFO] [1791751132.862503187] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751133.565388952] [move_arm_node]: Gripper done
+[INFO] [1791751133.565535123] [move_arm_node]: Cartesian move to (422.51343360087265, -4.784095803523819, 122.77938923113113), yaw 0 deg
+[INFO] [1791751134.563235526] [move_arm_node]: Move complete.
+[INFO] [1791751134.563399852] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751136.562038796] [move_arm_node]: Move complete.
+[INFO] [1791751136.562202441] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751137.662400156] [move_arm_node]: Move complete.
+[INFO] [1791751137.662565614] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751138.034416479] [move_arm_node]: Gripper done
+[INFO] [1791751138.034566195] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751139.061914228] [move_arm_node]: Move complete.
+[INFO] [1791751139.062086004] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751141.062670647] [move_arm_node]: Move complete.
+Detected: 11x capacitor
+Duplicate detection of 'capacitor' at (392.1621519928884, 37.06818699033562, 30.496911737259992), skipping...
+Duplicate detection of 'capacitor' at (372.1250420534853, -45.71196563480436, 31.88343463557508), skipping...
+Captured target in main: 371.59273836415827, -45.63057411954286, 25.11932580910875 (capacitor)
+Gripper yaw: -15 deg, opening 31 mm
+[INFO] [1791751141.513173949] [move_arm_node]: Cartesian move to (359.9180056462816, -34.297269479875794, 101.52166782853159), yaw -15 deg
+[INFO] [1791751143.262075001] [move_arm_node]: Move complete.
+[INFO] [1791751143.262233467] [move_arm_node]: Setting gripper to 313
+[INFO] [1791751143.633040160] [move_arm_node]: Gripper done
+[INFO] [1791751143.633191326] [move_arm_node]: Cartesian move to (359.9180056462816, -34.297269479875794, 21.52166782853159), yaw -15 deg
+[INFO] [1791751145.162253701] [move_arm_node]: Move complete.
+[INFO] [1791751145.162415100] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751145.753795112] [move_arm_node]: Gripper done
+[INFO] [1791751145.754044633] [move_arm_node]: Cartesian move to (359.9180056462816, -34.297269479875794, 101.52166782853159), yaw -15 deg
+[INFO] [1791751146.762695427] [move_arm_node]: Move complete.
+[INFO] [1791751146.762865457] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751148.762097933] [move_arm_node]: Move complete.
+[INFO] [1791751148.762266487] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751149.862115054] [move_arm_node]: Move complete.
+[INFO] [1791751149.862280663] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751150.346209341] [move_arm_node]: Gripper done
+[INFO] [1791751150.346362723] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751151.362262561] [move_arm_node]: Move complete.
+[INFO] [1791751151.362423919] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751153.362024785] [move_arm_node]: Move complete.
+Detected: 9x capacitor, 1x transformer
+Duplicate detection of 'capacitor' at (395.4420852198288, 40.86296378625809, 37.018091667031406), skipping...
+Duplicate detection of 'transformer' at (391.842105677945, 38.483688270603835, 30.932109677779486), skipping...
+Captured target in main: 392.0442456721108, 38.47791823637986, 31.065106069764592 (capacitor)
+Gripper yaw: 75 deg, opening 35 mm
+[INFO] [1791751153.759592738] [move_arm_node]: Cartesian move to (382.0321676694799, 52.891583655662004, 101.99418540029622), yaw 75 deg
+[INFO] [1791751155.562239599] [move_arm_node]: Move complete.
+[INFO] [1791751155.562388205] [move_arm_node]: Setting gripper to 347
+[INFO] [1791751156.048092427] [move_arm_node]: Gripper done
+[INFO] [1791751156.048237885] [move_arm_node]: Cartesian move to (382.0321676694799, 52.891583655662004, 21.994185400296217), yaw 75 deg
+[INFO] [1791751157.462381562] [move_arm_node]: Move complete.
+[INFO] [1791751157.462566145] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751158.054828684] [move_arm_node]: Gripper done
+[INFO] [1791751158.054991195] [move_arm_node]: Cartesian move to (382.0321676694799, 52.891583655662004, 101.99418540029622), yaw 75 deg
+[INFO] [1791751158.961970608] [move_arm_node]: Move complete.
+[INFO] [1791751158.962129752] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751161.762048833] [move_arm_node]: Move complete.
+[INFO] [1791751161.762294420] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751162.862588482] [move_arm_node]: Move complete.
+[INFO] [1791751162.862742366] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751163.345367695] [move_arm_node]: Gripper done
+[INFO] [1791751163.345515390] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751164.362416114] [move_arm_node]: Move complete.
+[INFO] [1791751164.362582840] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751166.361925953] [move_arm_node]: Move complete.
+Detected: 7x capacitor
+Captured target in main: 382.962142464531, -6.297347262249037, 22.45480977500097 (capacitor)
+Gripper yaw: -15 deg, opening 30 mm
+[INFO] [1791751166.727899402] [move_arm_node]: Cartesian move to (371.1127639983599, 5.579526686531288, 99.42928962874059), yaw -15 deg
+[INFO] [1791751168.461940567] [move_arm_node]: Move complete.
+[INFO] [1791751168.462090072] [move_arm_node]: Setting gripper to 295
+[INFO] [1791751168.944535503] [move_arm_node]: Gripper done
+[INFO] [1791751168.944683431] [move_arm_node]: Cartesian move to (371.1127639983599, 5.579526686531288, 19.42928962874059), yaw -15 deg
+[INFO] [1791751170.461956665] [move_arm_node]: Move complete.
+[INFO] [1791751170.462114144] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751171.050260924] [move_arm_node]: Gripper done
+[INFO] [1791751171.050411805] [move_arm_node]: Cartesian move to (371.1127639983599, 5.579526686531288, 99.42928962874059), yaw -15 deg
+[INFO] [1791751172.061974439] [move_arm_node]: Move complete.
+[INFO] [1791751172.062132041] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751173.962427731] [move_arm_node]: Move complete.
+[INFO] [1791751173.962590044] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751175.065480749] [move_arm_node]: Move complete.
+[INFO] [1791751175.065644278] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751175.548323688] [move_arm_node]: Gripper done
+[INFO] [1791751175.548469404] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751176.562549918] [move_arm_node]: Move complete.
+[INFO] [1791751176.562733051] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751178.562398684] [move_arm_node]: Move complete.
+Detected: 6x capacitor
+Target at z=13.4 mm would grasp at 0.7 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 357.341704836618, -2.515293145004524, 13.443148733207511 (capacitor)
+Gripper yaw: -60 deg, opening 38 mm
+[INFO] [1791751178.982599202] [move_arm_node]: Cartesian move to (345.4277995339336, 9.562196592446295, 86.0), yaw -60 deg
+[INFO] [1791751180.762089479] [move_arm_node]: Move complete.
+[INFO] [1791751180.762240436] [move_arm_node]: Setting gripper to 384
+[INFO] [1791751181.137451464] [move_arm_node]: Gripper done
+[INFO] [1791751181.137599256] [move_arm_node]: Cartesian move to (345.4277995339336, 9.562196592446295, 6.0), yaw -60 deg
+[INFO] [1791751182.662220308] [move_arm_node]: Move complete.
+[INFO] [1791751182.662373385] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751183.363451647] [move_arm_node]: Gripper done
+[INFO] [1791751183.363607992] [move_arm_node]: Cartesian move to (345.4277995339336, 9.562196592446295, 86.0), yaw -60 deg
+[INFO] [1791751184.462341647] [move_arm_node]: Move complete.
+[INFO] [1791751184.462509820] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751186.362313300] [move_arm_node]: Move complete.
+[INFO] [1791751186.362491563] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751187.462162287] [move_arm_node]: Move complete.
+[INFO] [1791751187.462318555] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751188.159122006] [move_arm_node]: Gripper done
+[INFO] [1791751188.159315632] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751189.262109821] [move_arm_node]: Move complete.
+[INFO] [1791751189.262274977] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751191.265373437] [move_arm_node]: Move complete.
+Detected: 5x capacitor
+Target at z=11.7 mm would grasp at 0.6 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 360.27053134425887, 45.59953778998216, 11.724607922230735 (capacitor)
+Gripper yaw: 15 deg, opening 25 mm
+[INFO] [1791751191.553582305] [move_arm_node]: Cartesian move to (348.5143228924846, 58.730553765855845, 86.0), yaw 15 deg
+[INFO] [1791751193.262490119] [move_arm_node]: Move complete.
+[INFO] [1791751193.262656775] [move_arm_node]: Setting gripper to 250
+[INFO] [1791751193.635286019] [move_arm_node]: Gripper done
+[INFO] [1791751193.635446945] [move_arm_node]: Cartesian move to (348.5143228924846, 58.730553765855845, 6.0), yaw 15 deg
+[INFO] [1791751195.162327255] [move_arm_node]: Move complete.
+[INFO] [1791751195.162479378] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751195.645972696] [move_arm_node]: Gripper done
+[INFO] [1791751195.646116663] [move_arm_node]: Cartesian move to (348.5143228924846, 58.730553765855845, 86.0), yaw 15 deg
+[INFO] [1791751196.662240111] [move_arm_node]: Move complete.
+[INFO] [1791751196.662409498] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751198.562242297] [move_arm_node]: Move complete.
+[INFO] [1791751198.562395856] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751199.662185096] [move_arm_node]: Move complete.
+[INFO] [1791751199.662333056] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751200.357824111] [move_arm_node]: Gripper done
+[INFO] [1791751200.357963912] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751201.462335594] [move_arm_node]: Move complete.
+[INFO] [1791751201.462490298] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751203.462205898] [move_arm_node]: Move complete.
+Detected: 6x capacitor
+Target at z=10.8 mm would grasp at 3.1 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 406.9300987603242, 73.56290511285948, 10.765624527509843 (capacitor)
+Gripper yaw: 0 deg, opening 30 mm
+[INFO] [1791751203.867362146] [move_arm_node]: Cartesian move to (394.39746051394155, 86.25143088607192, 86.0), yaw 0 deg
+[INFO] [1791751205.764768240] [move_arm_node]: Move complete.
+[INFO] [1791751205.764981044] [move_arm_node]: Setting gripper to 301
+[INFO] [1791751206.143421233] [move_arm_node]: Gripper done
+[INFO] [1791751206.143568990] [move_arm_node]: Cartesian move to (394.39746051394155, 86.25143088607192, 6.0), yaw 0 deg
+[INFO] [1791751207.562670420] [move_arm_node]: Move complete.
+[INFO] [1791751207.562826798] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751208.158693918] [move_arm_node]: Gripper done
+[INFO] [1791751208.159278874] [move_arm_node]: Cartesian move to (394.39746051394155, 86.25143088607192, 86.0), yaw 0 deg
+[INFO] [1791751209.162103742] [move_arm_node]: Move complete.
+[INFO] [1791751209.162256579] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751210.961909518] [move_arm_node]: Move complete.
+[INFO] [1791751210.962072425] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751212.062407411] [move_arm_node]: Move complete.
+[INFO] [1791751212.062557104] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751212.652819939] [move_arm_node]: Gripper done
+[INFO] [1791751212.652966457] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751213.662144031] [move_arm_node]: Move complete.
+[INFO] [1791751213.662309317] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751215.662323743] [move_arm_node]: Move complete.
+Detected: 3x capacitor
+Target at z=16.9 mm would grasp at 5.2 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 438.49689017505926, 15.54970008363002, 16.90990235128087 (capacitor)
+Gripper yaw: 30 deg, opening 26 mm
+[INFO] [1791751215.922172748] [move_arm_node]: Cartesian move to (428.7159754303767, 27.220048378275212, 86.0), yaw 30 deg
+[INFO] [1791751217.762190447] [move_arm_node]: Move complete.
+[INFO] [1791751217.762349676] [move_arm_node]: Setting gripper to 255
+[INFO] [1791751218.353520652] [move_arm_node]: Gripper done
+[INFO] [1791751218.353672169] [move_arm_node]: Cartesian move to (428.7159754303767, 27.220048378275212, 6.0), yaw 30 deg
+[INFO] [1791751219.762370071] [move_arm_node]: Move complete.
+[INFO] [1791751219.762518468] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751220.354937695] [move_arm_node]: Gripper done
+[INFO] [1791751220.355089780] [move_arm_node]: Cartesian move to (428.7159754303767, 27.220048378275212, 86.0), yaw 30 deg
+[INFO] [1791751221.262441200] [move_arm_node]: Move complete.
+[INFO] [1791751221.262598122] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751223.462496681] [move_arm_node]: Move complete.
+[INFO] [1791751223.462648015] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751224.562408509] [move_arm_node]: Move complete.
+[INFO] [1791751224.562559949] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751225.154399933] [move_arm_node]: Gripper done
+[INFO] [1791751225.154558838] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751226.162496621] [move_arm_node]: Move complete.
+[INFO] [1791751226.162664285] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751228.163485745] [move_arm_node]: Move complete.
+Detected: 3x capacitor
+Target at z=6.2 mm would grasp at -7.7 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 344.0619953001905, 15.119147477378942, 6.1848502193866395 (capacitor)
+Gripper yaw: 0 deg, opening 23 mm
+[INFO] [1791751228.417289609] [move_arm_node]: Cartesian move to (333.8745877551407, 27.01211255475996, 86.0), yaw 0 deg
+[INFO] [1791751230.162524757] [move_arm_node]: Move complete.
+[INFO] [1791751230.162680696] [move_arm_node]: Setting gripper to 227
+[INFO] [1791751230.542098687] [move_arm_node]: Gripper done
+[INFO] [1791751230.542241099] [move_arm_node]: Cartesian move to (333.8745877551407, 27.01211255475996, 6.0), yaw 0 deg
+[INFO] [1791751232.063932131] [move_arm_node]: Move complete.
+[INFO] [1791751232.064114632] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751232.872147397] [move_arm_node]: Gripper done
+[INFO] [1791751232.872296619] [move_arm_node]: Cartesian move to (333.8745877551407, 27.01211255475996, 86.0), yaw 0 deg
+[INFO] [1791751233.962104152] [move_arm_node]: Move complete.
+[INFO] [1791751233.962293104] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751235.862546071] [move_arm_node]: Move complete.
+[INFO] [1791751235.862710396] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751236.962853943] [move_arm_node]: Move complete.
+[INFO] [1791751236.963010453] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751237.548846834] [move_arm_node]: Gripper done
+[INFO] [1791751237.548994396] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751238.562726895] [move_arm_node]: Move complete.
+[INFO] [1791751238.563673380] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751240.562367355] [move_arm_node]: Move complete.
+Detected: 1x capacitor
+Target at z=11.9 mm would grasp at -2.2 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 357.27003296512754, -25.32698064861086, 11.942457785170502 (capacitor)
+Gripper yaw: 45 deg, opening 24 mm
+[INFO] [1791751240.764757664] [move_arm_node]: Cartesian move to (345.2686675611458, -13.906879342722696, 86.0), yaw 45 deg
+[INFO] [1791751242.562725965] [move_arm_node]: Move complete.
+[INFO] [1791751242.562888121] [move_arm_node]: Setting gripper to 237
+[INFO] [1791751242.936901918] [move_arm_node]: Gripper done
+[INFO] [1791751242.937044884] [move_arm_node]: Cartesian move to (345.2686675611458, -13.906879342722696, 6.0), yaw 45 deg
+[INFO] [1791751244.462452131] [move_arm_node]: Move complete.
+[INFO] [1791751244.462638925] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751244.950832315] [move_arm_node]: Gripper done
+[INFO] [1791751244.950976259] [move_arm_node]: Cartesian move to (345.2686675611458, -13.906879342722696, 86.0), yaw 45 deg
+[INFO] [1791751245.962493596] [move_arm_node]: Move complete.
+[INFO] [1791751245.962650383] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751248.462934099] [move_arm_node]: Move complete.
+[INFO] [1791751248.463092233] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751249.562614318] [move_arm_node]: Move complete.
+[INFO] [1791751249.562762335] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751250.258958100] [move_arm_node]: Gripper done
+[INFO] [1791751250.259106924] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751251.362462414] [move_arm_node]: Move complete.
+[INFO] [1791751251.362625248] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751253.362429521] [move_arm_node]: Move complete.
+Detected: nothing
+No valid detections above threshold or matching target class 'None'
+Trial 4: 12 detected, 10 located, 10 placed, 0 empty grasp(s), 0 blocked descent(s), 0 left (no free angle), 0 failed move, 0 still on the board.
+How did it go? Type a number, or Enter for 0.
+  Components on the table that the camera did NOT detect? [0] 
+  Detections that were not a real component? [0] 
+  Picks logged as placed where the part did not reach a bin? [0] 
+  Parts released outside the correct bin? [0] 
+  Neighbouring components knocked or moved? [0] 
+  Note (optional): 
+
+4 trial(s) done this session: 40 placed of 40 located in total.
+Press 's' for trial 5, 'q' to quit.
+Detected: 10x capacitor
+
+===== Trial 5 =====
+[INFO] [1791751315.936185257] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751317.168082247] [move_arm_node]: Gripper done
+Captured target in main: 378.6589911039851, -57.81610624543265, 42.30980385319405 (capacitor)
+Gripper yaw: 60 deg, opening 40 mm
+[INFO] [1791751317.417163177] [move_arm_node]: Cartesian move to (374.7049817412515, -44.94447425972088, 119.92167790974906), yaw 60 deg
+[INFO] [1791751319.162429214] [move_arm_node]: Move complete.
+[INFO] [1791751319.162581429] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751320.392422420] [move_arm_node]: Gripper done
+[INFO] [1791751320.392576006] [move_arm_node]: Cartesian move to (374.7049817412515, -44.94447425972088, 39.921677909749064), yaw 60 deg
+[INFO] [1791751321.962910538] [move_arm_node]: Move complete.
+[INFO] [1791751321.963070623] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751322.658677377] [move_arm_node]: Gripper done
+[INFO] [1791751322.658835645] [move_arm_node]: Cartesian move to (374.7049817412515, -44.94447425972088, 119.92167790974906), yaw 60 deg
+[INFO] [1791751323.762366138] [move_arm_node]: Move complete.
+[INFO] [1791751323.762530438] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751326.563763399] [move_arm_node]: Move complete.
+[INFO] [1791751326.563935170] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751327.662456155] [move_arm_node]: Move complete.
+[INFO] [1791751327.662652801] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751328.145857984] [move_arm_node]: Gripper done
+[INFO] [1791751328.145998878] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751329.162331354] [move_arm_node]: Move complete.
+[INFO] [1791751329.162498899] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751331.162657560] [move_arm_node]: Move complete.
+Detected: 10x capacitor
+Duplicate detection of 'capacitor' at (388.1582670530838, 35.70329045944668, 31.049948243828286), skipping...
+Captured target in main: 384.28688139158646, -22.3548640166083, 28.8591025168225 (capacitor)
+Gripper yaw: 60 deg, opening 38 mm
+[INFO] [1791751331.607941524] [move_arm_node]: Cartesian move to (374.0693561699692, -11.157274955599831, 107.2810549497941), yaw 60 deg
+[INFO] [1791751333.362786287] [move_arm_node]: Move complete.
+[INFO] [1791751333.362959205] [move_arm_node]: Setting gripper to 384
+[INFO] [1791751333.735508135] [move_arm_node]: Gripper done
+[INFO] [1791751333.735752404] [move_arm_node]: Cartesian move to (374.0693561699692, -11.157274955599831, 27.281054949794097), yaw 60 deg
+[INFO] [1791751335.263003034] [move_arm_node]: Move complete.
+[INFO] [1791751335.263177313] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751335.850187413] [move_arm_node]: Gripper done
+[INFO] [1791751335.850343806] [move_arm_node]: Cartesian move to (374.0693561699692, -11.157274955599831, 107.2810549497941), yaw 60 deg
+[INFO] [1791751336.862392903] [move_arm_node]: Move complete.
+[INFO] [1791751336.862581938] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751339.562586267] [move_arm_node]: Move complete.
+[INFO] [1791751339.562742574] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751340.662418481] [move_arm_node]: Move complete.
+[INFO] [1791751340.662565843] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751341.143883725] [move_arm_node]: Gripper done
+[INFO] [1791751341.144032525] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751342.162571385] [move_arm_node]: Move complete.
+[INFO] [1791751342.162725325] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751344.162704110] [move_arm_node]: Move complete.
+Detected: 9x capacitor
+Duplicate detection of 'capacitor' at (388.86578781158016, 35.4052204416829, 23.654726698453644), skipping...
+Captured target in main: 385.969948817777, 8.917087224616566, 25.015024063005654 (capacitor)
+Gripper yaw: 75 deg, opening 27 mm
+[INFO] [1791751344.546173918] [move_arm_node]: Cartesian move to (374.8706388675658, 21.832143650001015, 100.84387890320633), yaw 75 deg
+[INFO] [1791751346.262517676] [move_arm_node]: Move complete.
+[INFO] [1791751346.262672855] [move_arm_node]: Setting gripper to 268
+[INFO] [1791751346.853090624] [move_arm_node]: Gripper done
+[INFO] [1791751346.853239569] [move_arm_node]: Cartesian move to (374.8706388675658, 21.832143650001015, 20.84387890320634), yaw 75 deg
+[INFO] [1791751348.362640672] [move_arm_node]: Move complete.
+[INFO] [1791751348.362790348] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751348.842342076] [move_arm_node]: Gripper done
+[INFO] [1791751348.842497597] [move_arm_node]: Cartesian move to (374.8706388675658, 21.832143650001015, 100.84387890320633), yaw 75 deg
+[INFO] [1791751349.862731572] [move_arm_node]: Move complete.
+[INFO] [1791751349.862891181] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751352.663093563] [move_arm_node]: Move complete.
+[INFO] [1791751352.663255442] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751353.762372681] [move_arm_node]: Move complete.
+[INFO] [1791751353.762539096] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751354.248211854] [move_arm_node]: Gripper done
+[INFO] [1791751354.248357400] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751355.262537544] [move_arm_node]: Move complete.
+[INFO] [1791751355.262712459] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751357.262613165] [move_arm_node]: Move complete.
+Detected: 7x capacitor
+Captured target in main: 388.12407066347686, 35.7338530952728, 32.32989042613521 (capacitor)
+Gripper yaw: -60 deg, opening 25 mm
+[INFO] [1791751357.644067345] [move_arm_node]: Cartesian move to (375.1928099433052, 47.019299112169286, 100.31050689318869), yaw -60 deg
+[INFO] [1791751359.462772270] [move_arm_node]: Move complete.
+[INFO] [1791751359.462926553] [move_arm_node]: Setting gripper to 254
+[INFO] [1791751359.953402089] [move_arm_node]: Gripper done
+[INFO] [1791751359.953548104] [move_arm_node]: Cartesian move to (375.1928099433052, 47.019299112169286, 20.310506893188695), yaw -60 deg
+[INFO] [1791751361.462154846] [move_arm_node]: Move complete.
+[INFO] [1791751361.462316195] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751362.060918078] [move_arm_node]: Gripper done
+[INFO] [1791751362.061084480] [move_arm_node]: Cartesian move to (375.1928099433052, 47.019299112169286, 100.31050689318869), yaw -60 deg
+[INFO] [1791751363.162467149] [move_arm_node]: Move complete.
+[INFO] [1791751363.162629808] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751364.962618993] [move_arm_node]: Move complete.
+[INFO] [1791751364.962868405] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751366.062752688] [move_arm_node]: Move complete.
+[INFO] [1791751366.062911547] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751366.546673482] [move_arm_node]: Gripper done
+[INFO] [1791751366.546816290] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751367.562995990] [move_arm_node]: Move complete.
+[INFO] [1791751367.563159504] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751369.562880412] [move_arm_node]: Move complete.
+Detected: 6x capacitor, 1x resistor
+Target at z=14.4 mm would grasp at 1.9 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Target at z=14.1 mm would grasp at 3.2 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 426.02442648082166, 19.155307368324102, 14.062444792618257 (capacitor)
+Gripper yaw: 30 deg, opening 26 mm
+[INFO] [1791751370.033623046] [move_arm_node]: Cartesian move to (414.86836843472275, 30.822658898039133, 86.0), yaw 30 deg
+[INFO] [1791751371.862783305] [move_arm_node]: Move complete.
+[INFO] [1791751371.862947127] [move_arm_node]: Setting gripper to 257
+[INFO] [1791751372.347958370] [move_arm_node]: Gripper done
+[INFO] [1791751372.349261082] [move_arm_node]: Cartesian move to (414.86836843472275, 30.822658898039133, 6.0), yaw 30 deg
+[INFO] [1791751373.762750555] [move_arm_node]: Move complete.
+[INFO] [1791751373.762908390] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751374.245893413] [move_arm_node]: Gripper done
+[INFO] [1791751374.246075643] [move_arm_node]: Cartesian move to (414.86836843472275, 30.822658898039133, 86.0), yaw 30 deg
+[INFO] [1791751375.163282042] [move_arm_node]: Move complete.
+[INFO] [1791751375.163445695] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751377.362648220] [move_arm_node]: Move complete.
+[INFO] [1791751377.362806530] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751378.463014536] [move_arm_node]: Move complete.
+[INFO] [1791751378.463197938] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751379.051243095] [move_arm_node]: Gripper done
+[INFO] [1791751379.051443373] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751380.062637757] [move_arm_node]: Move complete.
+[INFO] [1791751380.062826463] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751382.063982915] [move_arm_node]: Move complete.
+Detected: 5x capacitor
+Target at z=14.5 mm would grasp at 2.0 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Target at z=16.0 mm would grasp at 3.8 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 439.80750342722314, -16.511590230471302, 15.956161612355634 (capacitor)
+Gripper yaw: 0 deg, opening 26 mm
+[INFO] [1791751382.562401498] [move_arm_node]: Cartesian move to (429.640324180513, -5.627938097172917, 86.0), yaw 0 deg
+[INFO] [1791751384.462511172] [move_arm_node]: Move complete.
+[INFO] [1791751384.462665520] [move_arm_node]: Setting gripper to 260
+[INFO] [1791751385.053784062] [move_arm_node]: Gripper done
+[INFO] [1791751385.054112485] [move_arm_node]: Cartesian move to (429.640324180513, -5.627938097172917, 6.0), yaw 0 deg
+[INFO] [1791751386.462584359] [move_arm_node]: Move complete.
+[INFO] [1791751386.462761855] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751387.063536685] [move_arm_node]: Gripper done
+[INFO] [1791751387.063762609] [move_arm_node]: Cartesian move to (429.640324180513, -5.627938097172917, 86.0), yaw 0 deg
+[INFO] [1791751388.062687764] [move_arm_node]: Move complete.
+[INFO] [1791751388.062869272] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751390.062809104] [move_arm_node]: Move complete.
+[INFO] [1791751390.062980515] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751391.162406172] [move_arm_node]: Move complete.
+[INFO] [1791751391.162553832] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751391.753551047] [move_arm_node]: Gripper done
+[INFO] [1791751391.753701005] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751392.763104565] [move_arm_node]: Move complete.
+[INFO] [1791751392.763270520] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751394.762717021] [move_arm_node]: Move complete.
+Detected: 5x capacitor
+Only 0 valid depth pixels at (209, 725), skipping...
+Target at z=14.4 mm would grasp at 2.2 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Target at z=14.4 mm would grasp at 2.0 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 441.1501690452076, 45.455425154158455, 14.378400626061548 (capacitor)
+Gripper yaw: 15 deg, opening 26 mm
+[INFO] [1791751395.226338917] [move_arm_node]: Cartesian move to (430.8183170107879, 57.592589252461345, 86.0), yaw 15 deg
+[INFO] [1791751397.162869958] [move_arm_node]: Move complete.
+[INFO] [1791751397.163019958] [move_arm_node]: Setting gripper to 259
+[INFO] [1791751397.537954454] [move_arm_node]: Gripper done
+[INFO] [1791751397.538105705] [move_arm_node]: Cartesian move to (430.8183170107879, 57.592589252461345, 6.0), yaw 15 deg
+[INFO] [1791751398.962689079] [move_arm_node]: Move complete.
+[INFO] [1791751398.962844073] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751399.660857330] [move_arm_node]: Gripper done
+[INFO] [1791751399.660996026] [move_arm_node]: Cartesian move to (430.8183170107879, 57.592589252461345, 86.0), yaw 15 deg
+[INFO] [1791751400.662655464] [move_arm_node]: Move complete.
+[INFO] [1791751400.662865554] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751402.662978321] [move_arm_node]: Move complete.
+[INFO] [1791751402.663140129] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751403.762719214] [move_arm_node]: Move complete.
+[INFO] [1791751403.762880731] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751404.353145624] [move_arm_node]: Gripper done
+[INFO] [1791751404.353300497] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751405.363033102] [move_arm_node]: Move complete.
+[INFO] [1791751405.363203893] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751407.363650138] [move_arm_node]: Move complete.
+Detected: 3x capacitor
+Target at z=14.4 mm would grasp at 2.5 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Target at z=6.3 mm would grasp at -8.0 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Target at z=8.9 mm would grasp at -2.1 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 326.07505789637133, 66.9333147445367, 8.88458122560143 (capacitor)
+Gripper yaw: 45 deg, opening 28 mm
+[INFO] [1791751407.898541605] [move_arm_node]: Cartesian move to (313.11588954477645, 80.57012126186842, 86.0), yaw 45 deg
+[INFO] [1791751409.662924879] [move_arm_node]: Move complete.
+[INFO] [1791751409.663085479] [move_arm_node]: Setting gripper to 282
+[INFO] [1791751410.034980400] [move_arm_node]: Gripper done
+[INFO] [1791751410.035132078] [move_arm_node]: Cartesian move to (313.11588954477645, 80.57012126186842, 6.0), yaw 45 deg
+[INFO] [1791751411.563002874] [move_arm_node]: Move complete.
+[INFO] [1791751411.563156009] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751412.263392191] [move_arm_node]: Gripper done
+[INFO] [1791751412.263745365] [move_arm_node]: Cartesian move to (313.11588954477645, 80.57012126186842, 86.0), yaw 45 deg
+[INFO] [1791751413.363090755] [move_arm_node]: Move complete.
+[INFO] [1791751413.363306084] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751415.662671432] [move_arm_node]: Move complete.
+[INFO] [1791751415.662847563] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751416.763145789] [move_arm_node]: Move complete.
+[INFO] [1791751416.763336467] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751417.459828985] [move_arm_node]: Gripper done
+[INFO] [1791751417.459971548] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751418.563013913] [move_arm_node]: Move complete.
+[INFO] [1791751418.563183593] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751420.562786954] [move_arm_node]: Move complete.
+Detected: 3x capacitor
+Target at z=15.2 mm would grasp at 2.0 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Target at z=5.5 mm would grasp at -7.7 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Every part left has a neighbour in the way - taking the tallest one anyway.
+Captured target in main: 329.9584024789062, 18.899962600619407, 15.211836252330412 (capacitor)
+Gripper yaw: 75 deg, opening 28 mm
+[INFO] [1791751421.089676570] [move_arm_node]: Cartesian move to (317.57903037710065, 31.339099943864856, 86.0), yaw 75 deg
+[INFO] [1791751422.862926764] [move_arm_node]: Move complete.
+[INFO] [1791751422.863084366] [move_arm_node]: Setting gripper to 278
+[INFO] [1791751423.237824545] [move_arm_node]: Gripper done
+[INFO] [1791751423.237972231] [move_arm_node]: Cartesian move to (317.57903037710065, 31.339099943864856, 6.0), yaw 75 deg
+[INFO] [1791751424.862672020] [move_arm_node]: Move complete.
+[INFO] [1791751424.862837007] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751425.564887174] [move_arm_node]: Gripper done
+[INFO] [1791751425.565038482] [move_arm_node]: Cartesian move to (317.57903037710065, 31.339099943864856, 86.0), yaw 75 deg
+[INFO] [1791751426.663514946] [move_arm_node]: Move complete.
+[INFO] [1791751426.663696924] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751429.462849045] [move_arm_node]: Move complete.
+[INFO] [1791751429.463009483] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751430.563098040] [move_arm_node]: Move complete.
+[INFO] [1791751430.563256982] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751431.156850931] [move_arm_node]: Gripper done
+[INFO] [1791751431.156994982] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751432.262759611] [move_arm_node]: Move complete.
+[INFO] [1791751432.262918283] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751434.262931386] [move_arm_node]: Move complete.
+Detected: 2x capacitor, 1x resistor
+Target at z=5.6 mm would grasp at -8.1 mm, below the 6.0 mm table limit. Clamping to 6.0 mm.
+Captured target in main: 329.4371593151843, 1.6177046931593608, 5.637596267143829 (capacitor)
+Gripper yaw: 0 deg, opening 23 mm
+[INFO] [1791751434.470794061] [move_arm_node]: Cartesian move to (319.10938007966365, 13.403530286713476, 86.0), yaw 0 deg
+[INFO] [1791751436.263133377] [move_arm_node]: Move complete.
+[INFO] [1791751436.263287790] [move_arm_node]: Setting gripper to 230
+[INFO] [1791751436.638423647] [move_arm_node]: Gripper done
+[INFO] [1791751436.638615711] [move_arm_node]: Cartesian move to (319.10938007966365, 13.403530286713476, 6.0), yaw 0 deg
+[INFO] [1791751438.262709966] [move_arm_node]: Move complete.
+[INFO] [1791751438.262912962] [move_arm_node]: Setting gripper to 0
+[INFO] [1791751438.962993337] [move_arm_node]: Gripper done
+[INFO] [1791751438.963193701] [move_arm_node]: Cartesian move to (319.10938007966365, 13.403530286713476, 86.0), yaw 0 deg
+[INFO] [1791751440.063504052] [move_arm_node]: Move complete.
+[INFO] [1791751440.063667954] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751441.963160292] [move_arm_node]: Move complete.
+[INFO] [1791751441.963333183] [move_arm_node]: Cartesian move to (70.0, 220.6, 60.0), yaw 0 deg
+[INFO] [1791751443.062845407] [move_arm_node]: Move complete.
+[INFO] [1791751443.062998140] [move_arm_node]: Setting gripper to 400
+[INFO] [1791751443.648390840] [move_arm_node]: Gripper done
+[INFO] [1791751443.648560022] [move_arm_node]: Cartesian move to (70.0, 220.6, 140.0), yaw 0 deg
+[INFO] [1791751444.662960418] [move_arm_node]: Move complete.
+[INFO] [1791751444.663124179] [move_arm_node]: Cartesian move to (130.0, 0.0, 300.0), yaw 0 deg
+[INFO] [1791751446.663915679] [move_arm_node]: Move complete.
+Detected: 1x capacitor
+Only 0 valid depth pixels at (110, 858), skipping...
+Trial 5: 10 detected, 10 located, 10 placed, 0 empty grasp(s), 0 blocked descent(s), 0 left (no free angle), 0 failed move, 0 still on the board.
+How did it go? Type a number, or Enter for 0.
+  Components on the table that the camera did NOT detect? [0] 
+  Detections that were not a real component? [0] 
+  Picks logged as placed where the part did not reach a bin? [0] 
+  Parts released outside the correct bin? [0] 
+  Neighbouring components knocked or moved? [0] 
+  Note (optional): 
+
+5 trial(s) done this session: 50 placed of 50 located in total.
+Press 's' for trial 6, 'q' to quit.

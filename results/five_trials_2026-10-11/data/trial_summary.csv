@@ -1,0 +1,6 @@
+trial,parts,placed,successes,detections_first_image,duration_s,mean_s_per_pick,max_descent_current_a,crowded_picks,grasps_at_table_limit
+1,10,10,10,10,130.1,12.64,0.58,1,6
+2,10,10,10,10,127.9,12.47,0.73,0,5
+3,10,10,10,11,125.2,12.22,1.09,0,6
+4,10,10,10,12,125.1,12.19,0.6,0,6
+5,10,10,10,10,129.2,12.53,0.47,1,6

@@ -1,0 +1,6 @@
+time,snapshot,target_class,detected,located,attempted,placed,empty_grasp,blocked_descent,no_free_yaw,move_failed,remaining,missed_by_camera,false_detections,grasp_failures,wrong_bin,knocked_over,successes,note
+22:32:03,1,all,10,10,10,10,0,0,0,0,0,0,0,0,0,0,10,
+22:34:55,2,all,10,10,10,10,0,0,0,0,0,0,0,0,0,0,10,
+22:37:42,3,all,11,10,10,10,0,0,0,0,0,0,0,0,0,0,10,
+22:40:53,4,all,12,10,10,10,0,0,0,0,0,0,0,0,0,0,10,
+22:44:06,5,all,10,10,10,10,0,0,0,0,0,0,0,0,0,0,10,
