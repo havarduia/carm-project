@@ -217,3 +217,5 @@ frames_*.pdf
 # Trained model weights (20 MB); rebuild or copy them in, see README "Detection model"
 /detection_model/weights/
 # model_training/ keeps its own .gitignore for its venv (7 GB), datasets and runs
+# Weights Ultralytics downloads for its own start-up check
+/weights/

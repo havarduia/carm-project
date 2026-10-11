@@ -94,9 +94,47 @@ python3 main/main.py                          # pick everything, sorted by type
 python3 main/main.py --target-class resistor  # pick resistors only
 ```
 
+The grasp point is the centre of the part's top face, found in the depth points
+(`helpers/part_top.py`) and shifted by the `offset_x/y` trim in `main()`, and the fingertips stop `GRASP_DEPTH_MM` below it. The
+detector's own point is the depth at the centre of the detection box, which on a
+standing part lies on the side wall facing the camera, so it is only used with the fixed
+`offset_x/y/z` in `main()` when the top face cannot be found.
+
 Each pick approaches from `APPROACH_HEIGHT` mm above the component, lowers straight
 down, grips, and lifts clear before travelling — so the gripper never sweeps sideways
 at component height.
+
+Parts are taken tallest first (`pick_order` in `main/main.py`): a tall part is in the way
+of the fingers reaching for its neighbours and hides what stands behind it from the camera.
+Only the descent onto a part runs at `DEFAULT_SPEED`; every move clear of the board runs
+at `TRAVEL_SPEED` (both in `helpers/movement.py`).
+
+That descent is guarded: if the shoulder or elbow motor current jumps by more than
+`BLOCKED_CURRENT_A`, the arm has come down on something, the move is cancelled, the arm
+lifts off again and the part is logged as `blocked_descent`. The largest current change of
+every descent is logged as `descent_current_a` in `picks.csv`, to set that threshold from.
+The currents are read over the arm's own SDK (`xarm-python-sdk`, address `XARM_IP` in
+`helpers/movement.py`), because the joint effort ROS publishes is a modelled torque that
+does not react to contact; without the SDK the descents simply run unguarded.
+
+One `s` press clears the board one part at a time. After every pick the arm returns
+home, out of the camera's view, and the board is detected again, so a part pushed by the
+last pick is found where it now lies and a part that is still there is tried again (up to
+`MAX_ATTEMPTS_PER_PART` times per spot). If the gripper closes to less than
+`EMPTY_GRIP_MM` it holds nothing: it opens, skips the trip to the bin, and the part is
+retried. Detections outside `PICK_AREA_MM` are ignored, which keeps the arm from picking
+parts back out of the bins. All three constants are at the top of `main/main.py`.
+
+The fingers descend only as far open as the part needs: its width, taken from the narrow
+side of the detection box, plus `FINGER_CLEARANCE_MM` on each side (never less than
+`MIN_GRIPPER_OPEN`). If no gripper angle is free at that opening, wider ones are tried up
+to `GRIPPER_OPEN`. Parts are still released at `GRIPPER_OPEN`.
+
+A gripper angle is also refused if another detected part would stand anywhere under the
+gripper: between the finger faces it would be clamped along with the target, or instead of
+it. Such a part waits until its neighbour has been picked. Two parts standing closer than
+about a finger width (25 mm) block each other and are both left on the board, logged as
+`no_free_yaw`.
 
 Components are sorted by the class the model reports, one drop-off bin each. The bin
 positions are `PLACE_BINS` at the top of `main/main.py`, as `(x, y, release z)` in mm
@@ -157,9 +195,9 @@ change:
 ros2 run tf2_ros tf2_echo link_base link_tcp
 ```
 
-Note the interaction with `offset_z` in `main/main.py`, which pushes the grasp 10 mm
-below the detected top surface: with the floor at 2.0 mm, a component whose detected
-surface sits below **+12.0 mm** gets its grasp clamped to the floor. If thin parts are
+Note the interaction with `GRASP_DEPTH_MM` in `main/main.py`, which puts the grasp 15 mm
+below the part's top face: a component whose top sits less than that above the floor
+gets its grasp clamped to the floor. If thin parts are
 being gripped too high, that pairing is what to adjust — not the floor alone.
 
 ### Detection tuning

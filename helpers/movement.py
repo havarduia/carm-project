@@ -1,3 +1,4 @@
+import collections
 import math
 import time
 import rclpy
@@ -38,10 +39,56 @@ TABLE_CLEARANCE_MM = 10.0
 # place the arm is stopped from being driven into the table.
 MIN_Z_MM = TABLE_CONTACT_Z_MM + TABLE_CLEARANCE_MM
 
-# Speed of every move, as a fraction of the speed MoveIt plans at. 0.3 is the
-# speed the single-pick tests of 2026-10-04 ran at (about 27 s per cycle);
-# 0.7 was too fast on the rig.
+# Speed of the descent onto a part, as a fraction of the speed MoveIt plans
+# at. Until 2026-10-11 every move ran at this (about 18 s per pick); 0.7 for
+# every move was too fast on the rig.
 DEFAULT_SPEED = 0.3
+
+# Speed of the moves that are clear of the board: getting above a part,
+# lifting away from it, and everything to and from the bins and home. Only the
+# descent onto a part runs at DEFAULT_SPEED.
+TRAVEL_SPEED = 0.6
+
+# A guarded move is stopped when the motor current of the shoulder or elbow
+# joint changes by more than this within GUARD_WINDOW_S: the arm has come down
+# on something. The 25 free descents of 2026-10-11 changed by 0.39-0.58 A;
+# pressing on the gripper by hand gave 2-5 A. picks.csv logs the largest
+# change of every descent (descent_current_a).
+BLOCKED_CURRENT_A = 1.2
+GUARD_WINDOW_S = 0.2
+# Nothing is judged while the move is still getting under way.
+GUARD_SETTLE_S = 0.3
+GUARD_RATE_HZ = 100.0
+GUARDED_JOINTS = (1, 2)  # joint2 (shoulder) and joint3 (elbow)
+
+# The measured currents only come over the arm's own SDK, in its 100 Hz "dev"
+# report with the report switched from torque to current. What ROS publishes
+# as joint effort is a modelled torque that does not react to contact at all
+# (checked 2026-10-11 by pressing on the gripper). The connection is only read
+# from; all motion still goes through MoveIt.
+XARM_IP = "192.168.1.225"
+
+
+class TorqueGuard:
+    """Watches joint currents during one move for the jump of a collision."""
+
+    def __init__(self):
+        self.samples = collections.deque()  # (seconds since start, currents)
+        self.peak = 0.0
+
+    def update(self, t, currents):
+        """Feed one reading taken `t` seconds into the move. True once a
+        current has changed by more than BLOCKED_CURRENT_A within the window."""
+        if t < GUARD_SETTLE_S:
+            return False
+        now = [currents[j] for j in GUARDED_JOINTS]
+        self.samples.append((t, now))
+        while t - self.samples[0][0] > GUARD_WINDOW_S:
+            self.samples.popleft()
+        before = self.samples[0][1]
+        self.peak = max(self.peak, max(abs(a - b) for a, b in zip(now, before)))
+        return self.peak > BLOCKED_CURRENT_A
+
 
 # Rest pose returned to between picks, (x, y, z) in mm in link_base. Held high
 # so the arm sits clear of the table and out of the camera's view of it.
@@ -56,6 +103,16 @@ class MoveArm(Node):
         # grip this is the width of what is held; near 0 means it closed on
         # nothing.
         self.gripper_width_mm = None
+
+        # Set by a guarded move_to(): whether it was stopped because the arm
+        # came down on something, and the largest current change it saw (A).
+        self.blocked = False
+        self.descent_current_a = None
+        self._guard = None
+        self._guard_started = None
+        self._goal_handle = None
+        self._sdk = self._connect_sdk()
+        self.create_timer(1.0 / GUARD_RATE_HZ, self._poll_guard)
 
         self.get_logger().info("Waiting for services and action servers...")
 
@@ -152,9 +209,37 @@ class MoveArm(Node):
     # ==============================
     # Cartesian move
     # ==============================
-    def move_to(self, x, y, z, speed=DEFAULT_SPEED, yaw=0.0):
+    def _connect_sdk(self):
+        """Read-only connection for the measured joint currents, or None."""
+        try:
+            from xarm.wrapper import XArmAPI
+            sdk = XArmAPI(XARM_IP, report_type="dev")
+            if not sdk.connected or sdk.set_report_tau_or_i(1) != 0:
+                raise RuntimeError("no connection, or the current report was refused")
+            return sdk
+        except Exception as e:
+            self.get_logger().warn(
+                f"No joint currents from the arm ({e}); descents will not be guarded.")
+            return None
+
+    def _poll_guard(self):
+        if self._guard is None or self._sdk is None:
+            return
+        t = time.monotonic() - self._guard_started
+        if self._guard.update(t, self._sdk.joints_torque) and not self.blocked:
+            self.blocked = True
+            self.get_logger().warn(
+                f"Current jumped {self._guard.peak:.2f} A - the arm is on something. Stopping.")
+            if self._goal_handle is not None:
+                self._goal_handle.cancel_goal_async()
+
+    def move_to(self, x, y, z, speed=DEFAULT_SPEED, yaw=0.0, guard=False):
+        """Straight-line move of the TCP, gripper pointing down. With `guard`
+        the move is stopped as soon as the arm pushes against something;
+        `self.blocked` then says so. Returns whether the target was reached."""
         self.get_logger().info(
             f"Cartesian move to ({x}, {y}, {z}), yaw {math.degrees(yaw):.0f} deg")
+        self.blocked = False
 
         # Refused, not clamped: a silently raised grasp closes on nothing, which
         # is a confusing failure. Below the floor means the target is wrong.
@@ -192,8 +277,17 @@ class MoveArm(Node):
         goal = ExecuteTrajectory.Goal()
         goal.trajectory = traj
 
-        result = self._send_goal(self.execute_client, goal, "Trajectory execution")
+        if guard:
+            self._guard, self._guard_started = TorqueGuard(), time.monotonic()
+        try:
+            result = self._send_goal(self.execute_client, goal, "Trajectory execution")
+        finally:
+            if guard:
+                self.descent_current_a = self._guard.peak
+                self._guard = None
         if result is None:
+            return False
+        if self.blocked:
             return False
 
         # An accepted goal can still fail to run - e.g. the trajectory
@@ -219,12 +313,14 @@ class MoveArm(Node):
             self.get_logger().error(f"{what} rejected.")
             return None
 
+        self._goal_handle = goal_handle
         result_future = goal_handle.get_result_async()
         rclpy.spin_until_future_complete(self, result_future)
+        self._goal_handle = None
         return result_future.result().result
 
     def home(self):
-        return self.move_to(*HOME_POSE_MM)
+        return self.move_to(*HOME_POSE_MM, speed=TRAVEL_SPEED)
 
     # ==============================
     # Gripper

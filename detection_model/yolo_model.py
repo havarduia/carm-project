@@ -56,6 +56,9 @@ DEPTH_RANGE_M = (0.15, 1.5)
 # this (mm) are treated as the same object.
 DUPLICATE_RADIUS_MM = 8.0
 
+# How long detect_fresh() waits for frames newer than its call.
+FRESH_FRAME_TIMEOUT_S = 5.0
+
 # Annotated snapshot, for an RViz2 Image display.
 DETECTION_IMAGE_TOPIC = '/yolo/detection_image'
 
@@ -162,6 +165,7 @@ class YoloSnapshotNode(Node):
         self.frame = None
         self.frame_stamp = None
         self.depth = None
+        self.depth_stamp = None
         self.camera_info_ready = False
 
         self.camera_model = PinholeCameraModel()
@@ -211,6 +215,8 @@ class YoloSnapshotNode(Node):
         # Depth points of the last snapshot, (N, 3) mm in link_base. main.py
         # checks them for free space around each grasp.
         self.cloud_mm = None
+        # Where the camera stood for that snapshot, (x, y) mm in link_base.
+        self.camera_xy_mm = None
 
         # Set by every snapshot, also one that finds nothing: the raw and
         # annotated frames, how many boxes passed the filter ('detected') and
@@ -232,6 +238,31 @@ class YoloSnapshotNode(Node):
             self.run_detection()
         elif key == 'q' and rclpy.ok():
             rclpy.shutdown()
+
+    def detect_fresh(self, timeout_s=FRESH_FRAME_TIMEOUT_S):
+        """Detect on frames captured after this call. Returns the snapshot or None.
+
+        This node is not spun while the arm moves, so the frames it holds, and
+        the ones queued behind them, still show the arm over the table. Spin
+        until both colour and depth are newer than now before detecting.
+        """
+        start = self.get_clock().now()
+        deadline = start + rclpy.duration.Duration(seconds=timeout_s)
+
+        def fresh(stamp):
+            return stamp is not None and rclpy.time.Time.from_msg(stamp) > start
+
+        while not (fresh(self.frame_stamp) and fresh(self.depth_stamp)
+                   and self.camera_info_ready):
+            if not rclpy.ok() or self.get_clock().now() > deadline:
+                print(f"No new camera frame within {timeout_s} s.")
+                return None
+            rclpy.spin_once(self, timeout_sec=0.05)
+
+        self.snapshot = None
+        self.run_detection()
+        snapshot, self.snapshot = self.snapshot, None
+        return snapshot
 
     def publish_frame(self, frame):
         msg = self.bridge.cv2_to_imgmsg(frame, 'bgr8')
@@ -275,6 +306,7 @@ class YoloSnapshotNode(Node):
 
     def depth_callback(self, msg):
         self.depth = self.bridge.imgmsg_to_cv2(msg)
+        self.depth_stamp = msg.header.stamp
 
     def image_callback(self, msg):
 
@@ -325,6 +357,7 @@ class YoloSnapshotNode(Node):
             [(u - m.cx()) / m.fx() * z, (v - m.cy()) / m.fy() * z, z], axis=1)
 
         q, t = tf.rotation, tf.translation
+        self.camera_xy_mm = (t.x * 1000.0, t.y * 1000.0)
         rotation = np.array([
             [1 - 2 * (q.y**2 + q.z**2), 2 * (q.x*q.y - q.z*q.w), 2 * (q.x*q.z + q.y*q.w)],
             [2 * (q.x*q.y + q.z*q.w), 1 - 2 * (q.x**2 + q.z**2), 2 * (q.y*q.z - q.x*q.w)],
@@ -406,6 +439,11 @@ class YoloSnapshotNode(Node):
             if Z is None:
                 continue
 
+            # Narrow side of the box at the part's distance, in mm. Read as the
+            # part's width: a loose box or the oblique view only make it larger.
+            width_mm = 1000.0 * Z * min(p['width'] / self.camera_model.fx(),
+                                        p['height'] / self.camera_model.fy())
+
             X, Y, Z = deproject(self.camera_model, u, v, Z)
 
             point = PointStamped()
@@ -426,7 +464,7 @@ class YoloSnapshotNode(Node):
                 ry = robot_point.point.y
                 rz = robot_point.point.z
 
-                target = (rx * 1000.0, ry * 1000.0, rz * 1000.0, p['class'])
+                target = (rx * 1000.0, ry * 1000.0, rz * 1000.0, p['class'], width_mm)
 
                 if any(math.dist(target[:3], t[:3]) < DUPLICATE_RADIUS_MM for t in valid_targets):
                     print(f"Duplicate detection of '{p['class']}' at {target[:3]}, skipping...")

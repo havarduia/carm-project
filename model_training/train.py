@@ -20,11 +20,15 @@ def main():
     # v8 export was stretched to 640 x 640; v9 is fit within 1280.
     parser.add_argument("--imgsz", type=int, default=640)
     parser.add_argument("--batch", type=int, default=16)
+    parser.add_argument("--model", default="yolo26s.pt",
+                        help="weights, or a model yaml (e.g. yolo26s-p2.yaml) started from yolo26s.pt")
     args = parser.parse_args()
     DATA = HERE / "datasets" / args.data / "data.yaml"
     NAME, IMGSZ = args.name, args.imgsz
 
-    model = YOLO("yolo26s.pt")  # COCO-pretrained
+    model = YOLO(args.model)  # COCO-pretrained
+    if args.model.endswith(".yaml"):
+        model.load("yolo26s.pt")  # copies every layer the two architectures share
     model.train(
         data=str(DATA),
         imgsz=IMGSZ,

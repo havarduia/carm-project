@@ -1,5 +1,6 @@
 """Self-checks for the pure ordering and coordinate logic. Run: python3 test_main.py"""
 
+import math
 import os
 import sys
 
@@ -16,10 +17,14 @@ from detection_model.yolo_model import (
     deproject,
     read_key,
 )
-from helpers.grasp_yaw import choose_grasp_yaw, closing_axis
-from helpers.movement import MIN_Z_MM, downward_orientation
+from helpers.grasp_yaw import choose_grasp_yaw, clamps_neighbour, closing_axis
+from helpers.part_top import part_top
+from helpers.movement import (BLOCKED_CURRENT_A, GUARD_SETTLE_S, HOME_POSE_MM, MIN_Z_MM,
+                              TorqueGuard, downward_orientation)
 from helpers.run_log import RunLog
-from main.main import MockMoveArm, order_targets
+from main.main import (EMPTY_GRIP_MM, GRIPPER_OPEN, MIN_GRIPPER_OPEN, MAX_ATTEMPTS_PER_PART, PICK_AREA_MM, PLACE_BINS,
+                       MockMoveArm, attempts_near, choose_grasp, finger_opening, in_pick_area,
+                       pick_and_place, pick_order)
 
 
 def _camera_model():
@@ -83,24 +88,45 @@ def test_bbox_extent():
     assert size[2] == MIN_BOX_SIZE_M
 
 
-def test_order_targets():
-    # Visits the nearest remaining target each time, starting from the base origin.
-    assert order_targets([(5, 0, 0), (1, 0, 0), (2, 0, 0)]) == [(1, 0, 0), (2, 0, 0), (5, 0, 0)]
+def test_pick_order():
+    home = HOME_POSE_MM[:2]
+    near = (home[0] + 50.0, home[1], 20.0, "capacitor")
+    far = (home[0] + 300.0, home[1], 22.0, "capacitor")
+    tall = (home[0] + 200.0, home[1], 45.0, "capacitor")
 
-    # Nearness is 3D, so a far-in-x but close-overall point wins.
-    assert order_targets([(0, 0, 9), (3, 0, 0)])[0] == (3, 0, 0)
+    # Tallest first; parts of about the same height, nearest the home pose first.
+    order = pick_order([(far, None), (near, None), (tall, None)])
+    assert [t for t, _ in order] == [tall, near, far], order
 
-    # Every target is visited exactly once, and the input is left alone.
-    targets = [(180.0, -25.0, 30.0), (210.0, 15.0, 32.0), (180.0, -25.0, 30.0)]
-    original = list(targets)
-    assert sorted(order_targets(targets)) == sorted(original)
-    assert targets == original
+    # The height that counts is the top face where it was found, not the
+    # detector's point on the side wall.
+    order = pick_order([(tall, None), (near, (near[0], near[1], 60.0))])
+    assert order[0][0] == near, order
 
-    assert order_targets([]) == []
+    assert pick_order([]) == []
 
-    # Class labels ride along untouched and do not affect the ordering.
-    labelled = [(5, 0, 0, "resistor"), (1, 0, 0, "capacitor")]
-    assert order_targets(labelled) == [(1, 0, 0, "capacitor"), (5, 0, 0, "resistor")]
+
+def test_torque_guard():
+    # A free descent: currents drift slowly as the arm's pose changes.
+    guard = TorqueGuard()
+    assert not any(guard.update(i / 100.0, [0.0, 0.4 + 0.001 * i, -2.9 - 0.001 * i, 0.0])
+                   for i in range(200))
+    assert guard.peak < BLOCKED_CURRENT_A / 2, guard.peak
+
+    # Landing on something: the shoulder current climbs within a few samples.
+    guard = TorqueGuard()
+    tripped_at = None
+    for i in range(200):
+        push = max(0, i - 100) * BLOCKED_CURRENT_A / 5
+        if guard.update(i / 100.0, [0.0, 0.4 + push, -2.9, 0.0]):
+            tripped_at = i
+            break
+    assert tripped_at is not None and tripped_at - 100 < 10, tripped_at
+
+    # The jolt of setting off does not count.
+    guard = TorqueGuard()
+    assert not guard.update(0.05, [0.0, 0.4, -2.9, 0.0])
+    assert not guard.update(GUARD_SETTLE_S / 2, [0.0, 9.0, -2.9, 0.0])
 
 
 def test_read_key():
@@ -189,6 +215,126 @@ def test_downward_orientation():
         assert np.allclose(np.abs(tool_y[:2] @ (cx, cy)), 1.0) and abs(tool_y[2]) < 1e-9
 
 
+def test_pick_area():
+    (x_min, x_max), (y_min, y_max) = PICK_AREA_MM
+    on_board = (380.0, 0.0, 15.0, "capacitor")
+    assert in_pick_area([on_board]) == [on_board]
+    # Parts lying in the bins are seen by the camera too, and must not be picked.
+    for bx, by, bz in PLACE_BINS.values():
+        assert in_pick_area([(bx, by, bz, "capacitor")]) == []
+    assert in_pick_area([(x_max + 1, 0.0, 15.0, "capacitor"), (x_min, y_min - 1, 15.0, "x")]) == []
+
+
+def test_attempts_near():
+    tried = [(300.0, 50.0), (303.0, 52.0), (400.0, 50.0)]
+    # A re-detection of the same part lands a few mm off, and still counts.
+    assert attempts_near((301.0, 51.0, 12.0, "capacitor"), tried) == 2 == MAX_ATTEMPTS_PER_PART
+    assert attempts_near((350.0, 50.0, 12.0, "capacitor"), tried) == 0
+
+
+def test_empty_grasp():
+    class Arm(MockMoveArm):
+        """Closes to `closed_mm` and records what it was told to do."""
+
+        def __init__(self, closed_mm, blocked_descent=False):
+            self.closed_mm, self.calls = closed_mm, []
+            self.blocked_descent = blocked_descent
+
+        def set_gripper(self, pos):
+            self.gripper_width_mm = self.closed_mm if pos == 0 else pos / 10.0
+            self.calls.append(("grip", pos))
+            return True
+
+        def move_to(self, x, y, z, speed=None, yaw=0.0, guard=False):
+            self.calls.append(("move", x, y))
+            self.blocked = guard and self.blocked_descent
+            return not self.blocked
+
+    grasp, bin_pose = (300.0, 0.0, 20.0), (70.0, 220.0, 60.0)
+
+    # A held part is carried to the bin.
+    arm = Arm(closed_mm=10.4)
+    assert pick_and_place(arm, grasp, 0.0, bin_pose) == ("placed", None, 10.4)
+    assert ("move", 70.0, 220.0) in arm.calls
+
+    # An empty close never travels to the bin, and leaves the gripper open.
+    arm = Arm(closed_mm=EMPTY_GRIP_MM / 2)
+    assert pick_and_place(arm, grasp, 0.0, bin_pose) == ("empty_grasp", None, EMPTY_GRIP_MM / 2)
+    assert ("move", 70.0, 220.0) not in arm.calls
+    assert arm.calls[-2][0] == "grip" and arm.calls[-2][1] > 0
+
+    # A descent stopped by something under a finger: the arm lifts off again
+    # without ever closing the gripper, and the part is left.
+    arm = Arm(closed_mm=10.4, blocked_descent=True)
+    assert pick_and_place(arm, grasp, 0.0, bin_pose) == ("blocked_descent", None, None)
+    assert ("grip", 0) not in arm.calls and ("move", 70.0, 220.0) not in arm.calls
+    assert arm.calls[-1] == ("move", 300.0, 0.0)
+
+
+def test_finger_opening():
+    # Unknown width: fully open, as before.
+    assert finger_opening(None) == GRIPPER_OPEN
+    # Small parts get the minimum, huge ones the maximum, and in between the
+    # opening grows with the part.
+    assert finger_opening(0.0) == MIN_GRIPPER_OPEN
+    assert finger_opening(60.0) == GRIPPER_OPEN
+    assert MIN_GRIPPER_OPEN < finger_opening(10.0) < finger_opening(15.0) < GRIPPER_OPEN
+
+    floor = _floor_cloud()
+    # Alone on the table, a part is taken at its own opening and with no turn.
+    assert choose_grasp(floor, 0.0, 0.0, 6.0, 10.0) == (finger_opening(10.0), 0.0)
+    assert choose_grasp(None, 0.0, 0.0, 6.0, 10.0) == (finger_opening(10.0), 0.0)
+
+    # Ringed by posts 38 mm away, the full opening fits nowhere but a narrow one does.
+    ring = [_post(38.0 * math.cos(a), 38.0 * math.sin(a), 30.0)
+            for a in np.arange(0.0, 2 * math.pi, math.pi / 8)]
+    cloud = np.vstack([floor] + ring)
+    assert choose_grasp_yaw(cloud, 0.0, 0.0, 6.0, GRIPPER_OPEN / 10.0, 0.0) is None
+    grasp = choose_grasp(cloud, 0.0, 0.0, 6.0, 8.0)
+    assert grasp is not None and grasp[0] == finger_opening(8.0), grasp
+
+    # A neighbour 18 mm to the side stands between the finger faces at yaw 0
+    # and would be clamped along with the part, so the gripper turns or gives up.
+    assert clamps_neighbour(0.0, 0.0, 30.0, 0.0, [(18.0, 0.0, 5.0)])
+    assert not clamps_neighbour(0.0, 0.0, 30.0, 0.0, [(40.0, 0.0, 5.0)])
+    assert not clamps_neighbour(0.0, 0.0, 30.0, 0.0, [])
+    yaw = choose_grasp_yaw(floor, 0.0, 0.0, 6.0, 30.0, 0.0, [(40.0, 0.0, 5.0)])
+    assert yaw == 0.0, yaw
+    assert choose_grasp(floor, 0.0, 0.0, 6.0, 10.0, [(18.0, 0.0, 5.0)]) is None
+
+    # A tall part wider than the estimate blocks the narrow openings itself,
+    # so the fingers open further until they clear it.
+    wide = np.vstack([floor] + [_post(dx, dy, 30.0) for dx in (-10.0, 0.0, 10.0)
+                                for dy in (-10.0, 0.0, 10.0)])
+    opening, _ = choose_grasp(wide, 0.0, 0.0, 6.0, 8.0)
+    assert opening > finger_opening(8.0), opening
+
+
+def test_part_top():
+    # A 20 mm wide, 30 mm tall block centred on (300, 0), seen by a camera
+    # standing at (0, 0): its top face, and the side wall facing the camera.
+    xs, ys = np.meshgrid(np.arange(290.0, 310.0), np.arange(-10.0, 10.0))
+    top = np.stack([xs.ravel(), ys.ravel(), np.full(xs.size, 30.0)], axis=1)
+    ys, zs = np.meshgrid(np.arange(-10.0, 10.0), np.arange(0.0, 30.0))
+    wall = np.stack([np.full(ys.size, 290.0), ys.ravel(), zs.ravel()], axis=1)
+    cloud = np.vstack([_floor_cloud() + (300.0, 0.0, 0.0), top, wall])
+
+    # The detector's point is on that wall, two thirds of the way up. The
+    # grasp belongs on the block's axis, at its full height.
+    x, y, z = part_top(cloud, (290.0, 0.0, 20.0), 10.0, (0.0, 0.0))
+    assert abs(x - 300.0) < 2.0 and abs(y) < 1.0 and abs(z - 30.0) < 0.5, (x, y, z)
+
+    # A taller block right behind it must not be taken for its top.
+    xs, ys = np.meshgrid(np.arange(314.0, 334.0), np.arange(-10.0, 10.0))
+    behind = np.stack([xs.ravel(), ys.ravel(), np.full(xs.size, 50.0)], axis=1)
+    x, y, z = part_top(np.vstack([cloud, behind]), (290.0, 0.0, 20.0), 10.0, (0.0, 0.0))
+    assert abs(x - 300.0) < 2.0 and abs(z - 30.0) < 0.5, (x, y, z)
+
+    # No depth over the part: nothing to go on.
+    assert part_top(np.zeros((0, 3)), (290.0, 0.0, 20.0), 10.0, (0.0, 0.0)) is None
+    assert part_top(_floor_cloud(), (290.0, 0.0, 20.0), 10.0, (0.0, 0.0)) is None
+
+
 def test_run_log():
     import csv
     import tempfile
@@ -206,7 +352,8 @@ def test_run_log():
 
 
 if __name__ == "__main__":
-    test_order_targets()
+    test_pick_order()
+    test_torque_guard()
     test_deproject()
     test_bbox_points()
     test_bbox_extent()
@@ -214,5 +361,10 @@ if __name__ == "__main__":
     test_z_floor()
     test_grasp_yaw()
     test_downward_orientation()
+    test_pick_area()
+    test_attempts_near()
+    test_empty_grasp()
+    test_finger_opening()
+    test_part_top()
     test_run_log()
     print("ok")
