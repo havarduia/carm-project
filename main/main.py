@@ -178,6 +178,15 @@ def choose_grasp(cloud_mm, x, y, z, width_mm, neighbours=()):
     return None
 
 
+# What was put on the board, asked first after each snapshot's picks and
+# compared with what was placed: (class, what the operator calls it). The
+# column in snapshots.csv is on_board_<class>.
+BOARD_COUNTS = [
+    ("capacitor", "Capacitors"),
+    ("resistor", "Resistors"),
+    ("transformer", "Coils / transformers"),
+]
+
 # What the code cannot see for itself, asked after each snapshot's picks:
 # (column in snapshots.csv, question).
 OPERATOR_QUESTIONS = [
@@ -349,6 +358,8 @@ def main(args=None):
     snapshot_no = 0
     trial = "Hover check" if cli_args.hover else "Trial"
     total_placed = total_located = 0
+    # Against the operator's count of what was on the board.
+    total_successes = total_on_board = 0
 
     while cli_args.no_hardware or rclpy.ok():
         if cli_args.no_hardware:
@@ -381,6 +392,7 @@ def main(args=None):
         located = len(targets)
 
         outcomes = []
+        placed_by_class = {}
         # (x, y) of every pick on this board that did not place its part. A
         # placed part is gone; a part found at its spot later is another one,
         # revealed by it, and starts with no tries.
@@ -509,6 +521,8 @@ def main(args=None):
                     moveto.home()
 
                 outcomes.append(outcome)
+                if outcome == "placed":
+                    placed_by_class[cls.lower()] = placed_by_class.get(cls.lower(), 0) + 1
                 log.write("picks", {
                     "time": time.strftime("%H:%M:%S"),
                     "snapshot": snapshot_no,
@@ -580,14 +594,26 @@ def main(args=None):
         answers = {}
         if not cli_args.no_hardware and not cli_args.hover:
             print("How did it go? Type a number, or Enter for 0.")
-            answers = {key: ask_count(question) for key, question in OPERATOR_QUESTIONS}
-        for key, _ in OPERATOR_QUESTIONS:
+            answers = {f"on_board_{cls}": ask_count(f"{name} on the board at the start")
+                       for cls, name in BOARD_COUNTS}
+            answers.update({key: ask_count(question) for key, question in OPERATOR_QUESTIONS})
+        for key in [f"on_board_{cls}" for cls, _ in BOARD_COUNTS] + [k for k, _ in OPERATOR_QUESTIONS]:
             answer = answers.get(key)
             row[key] = "" if answer is None else answer
         if answers.get("grasp_failures") is not None and answers.get("wrong_bin") is not None:
             row["successes"] = row["placed"] - answers["grasp_failures"] - answers["wrong_bin"]
         else:
             row["successes"] = ""
+        on_board = sum(answers.get(f"on_board_{cls}") or 0 for cls, _ in BOARD_COUNTS)
+        if row["successes"] != "" and on_board:
+            for cls, name in BOARD_COUNTS:
+                if answers[f"on_board_{cls}"] or placed_by_class.get(cls):
+                    print(f"  {name}: {placed_by_class.get(cls, 0)} placed "
+                          f"of {answers[f'on_board_{cls}']} on the board")
+            total_successes += row["successes"]
+            total_on_board += on_board
+            print(f"{row['successes']} of {on_board} components reached their bin; "
+                  f"this session {total_successes} of {total_on_board}.")
         row["note"] = (read_line("  Note (optional): ") or "") if answers else ""
         log.write("snapshots", row)
 

@@ -158,7 +158,7 @@ The arm opens the gripper and moves home as soon as it starts. Then:
 
 | Key | Does |
 | --- | --- |
-| `s` | Starts the next trial: clears the board, then asks the operator five count questions |
+| `s` | Starts the next trial: clears the board, then asks the operator how many capacitors, resistors and coils were on the board and five count questions, and prints how many of each were placed |
 | `q` | Quits |
 
 Trials are numbered on screen, with a running total of parts placed after each one. The
@@ -184,7 +184,7 @@ Every run of `main.py` writes a folder `logs/<date>_<time>/`:
 | File | Contents |
 | --- | --- |
 | `picks.csv` | One row per pick: position, top height, grasp point, estimated width, finger opening, gripper angle, outcome, grip width after closing, largest current jump of the descent, seconds |
-| `snapshots.csv` | One row per trial: detections, parts located, placed, each kind of failure, parts remaining, and the operator's answers |
+| `snapshots.csv` | One row per trial: detections, parts located, placed, each kind of failure, parts remaining, and the operator's answers, starting with the components of each class on the board (`on_board_capacitor`, `on_board_resistor`, `on_board_transformer`) |
 | `snapshot_NN_raw.jpg`, `_detections.jpg`, `_after.jpg` | The camera frame at the start of the trial, the same with boxes, and the last detection of the trial |
 
 Outcomes in `picks.csv` are `placed`, `empty_grasp`, `blocked_descent`, `no_free_yaw`
