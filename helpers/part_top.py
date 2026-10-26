@@ -25,6 +25,12 @@ MIN_POINTS = 30
 # The centre is found, then looked for again around where it was found.
 ROUNDS = 2
 
+# A part's own top lies within 0.7 radius of the first guess (36 picks of
+# 2026-10-26). The rim of a taller part packed against it drew the search
+# 1.1-1.4 radii away in the same picks. A top further off than this, in
+# radii, is the neighbour's.
+MAX_SHIFT = 0.85
+
 
 def part_top(cloud_mm, seed, radius_mm, camera_xy):
     """(x, y, z) of the centre of a part's top face, in mm, or None.
@@ -40,7 +46,8 @@ def part_top(cloud_mm, seed, radius_mm, camera_xy):
         return None
 
     # First guess: the axis is one radius behind the point the camera hit.
-    centre = np.asarray(seed[:2], dtype=float) + away / distance * radius_mm
+    guess = np.asarray(seed[:2], dtype=float) + away / distance * radius_mm
+    centre = guess
 
     # Only what is near the part matters, and it is searched more than once.
     near = cloud_mm[np.hypot(*(cloud_mm[:, :2] - centre).T) <= 3 * radius_mm]
@@ -52,4 +59,6 @@ def part_top(cloud_mm, seed, radius_mm, camera_xy):
             return None
         top_z = float(np.percentile(over[:, 2], TOP_PERCENTILE))
         centre = over[over[:, 2] >= top_z - TOP_BAND_MM, :2].mean(axis=0)
+    if math.dist(centre, guess) > MAX_SHIFT * radius_mm:
+        return None
     return float(centre[0]), float(centre[1]), top_z

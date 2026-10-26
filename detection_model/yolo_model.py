@@ -215,6 +215,9 @@ class YoloSnapshotNode(Node):
         # Depth points of the last snapshot, (N, 3) mm in link_base. main.py
         # checks them for free space around each grasp.
         self.cloud_mm = None
+        # The same points as the depth image, (H, W, 3) mm in link_base with
+        # NaN where there is no reading: helpers/segment.py cuts parts out of it.
+        self.grid_mm = None
         # Where the camera stood for that snapshot, (x, y) mm in link_base.
         self.camera_xy_mm = None
 
@@ -339,7 +342,8 @@ class YoloSnapshotNode(Node):
         return Z
 
     def _snapshot_cloud(self):
-        """Every usable depth pixel as (N, 3) mm in link_base, or None without TF."""
+        """Every usable depth pixel as (N, 3) mm in link_base, or None without
+        TF. Also sets grid_mm."""
         try:
             tf = self.tf_buffer.lookup_transform(
                 "link_base", "camera_color_optical_frame", rclpy.time.Time(),
@@ -350,11 +354,12 @@ class YoloSnapshotNode(Node):
             return None
 
         z = self.depth.astype(np.float32) / 1000.0
-        v, u = np.nonzero((z >= DEPTH_RANGE_M[0]) & (z <= DEPTH_RANGE_M[1]))
-        z = z[v, u]
+        valid = (z >= DEPTH_RANGE_M[0]) & (z <= DEPTH_RANGE_M[1])
+        z[~valid] = np.nan
+        v, u = np.indices(z.shape, dtype=np.float32)
         m = self.camera_model
         points = np.stack(
-            [(u - m.cx()) / m.fx() * z, (v - m.cy()) / m.fy() * z, z], axis=1)
+            [(u - m.cx()) / m.fx() * z, (v - m.cy()) / m.fy() * z, z], axis=-1)
 
         q, t = tf.rotation, tf.translation
         self.camera_xy_mm = (t.x * 1000.0, t.y * 1000.0)
@@ -363,7 +368,9 @@ class YoloSnapshotNode(Node):
             [2 * (q.x*q.y + q.z*q.w), 1 - 2 * (q.x**2 + q.z**2), 2 * (q.y*q.z - q.x*q.w)],
             [2 * (q.x*q.z - q.y*q.w), 2 * (q.y*q.z + q.x*q.w), 1 - 2 * (q.x**2 + q.y**2)],
         ])
-        return (points @ rotation.T + (t.x, t.y, t.z)) * 1000.0
+        self.grid_mm = (points @ rotation.T.astype(np.float32)
+                        + np.float32((t.x, t.y, t.z))) * np.float32(1000.0)
+        return self.grid_mm[valid].astype(np.float64)
 
     def run_detection(self):
 
@@ -464,7 +471,9 @@ class YoloSnapshotNode(Node):
                 ry = robot_point.point.y
                 rz = robot_point.point.z
 
-                target = (rx * 1000.0, ry * 1000.0, rz * 1000.0, p['class'], width_mm)
+                box = (p['x'] - p['width'] / 2, p['y'] - p['height'] / 2,
+                       p['x'] + p['width'] / 2, p['y'] + p['height'] / 2)
+                target = (rx * 1000.0, ry * 1000.0, rz * 1000.0, p['class'], width_mm, box)
 
                 if any(math.dist(target[:3], t[:3]) < DUPLICATE_RADIUS_MM for t in valid_targets):
                     print(f"Duplicate detection of '{p['class']}' at {target[:3]}, skipping...")

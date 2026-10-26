@@ -13,10 +13,11 @@ import numpy as np
 
 # xArm gripper fingers, in mm. They close along the tool Y axis (link_tcp ->
 # left_finger / right_finger sit at y = +/-31 mm). Thickness is along the
-# closing direction, width across it. Estimates - measure the fingers and
-# correct these if the check proves too tight or too loose.
-FINGER_THICKNESS_MM = 12.0
-FINGER_WIDTH_MM = 25.0
+# closing direction, width across it. Measured 2026-10-26; they are also 40 mm
+# long, so the gripper body is 40 mm above the fingertips. Nothing checks the
+# body: tallest-first picking keeps taller neighbours from standing under it.
+FINGER_THICKNESS_MM = 7.0
+FINGER_WIDTH_MM = 33.0
 
 # Kept clear around each finger, to absorb calibration and depth error.
 MARGIN_MM = 4.0
@@ -140,17 +141,19 @@ def clamps_neighbour(x, y, gap_mm, yaw, neighbours, tip_z=None):
     return False
 
 
-def choose_grasp_yaw(cloud_mm, x, y, grasp_z, gap_mm, floor_z, neighbours=()):
+def choose_grasp_yaw(cloud_mm, x, y, grasp_z, gap_mm, floor_z, neighbours=(),
+                     best_effort=False):
     """Yaw in radians for a grasp at (x, y, grasp_z), or None if every yaw is blocked.
 
     `cloud_mm` is the snapshot's depth points, (N, 3) mm in link_base.
     `gap_mm` is the opening between the fingers on the way down and `floor_z`
     the real height of the table in link_base. `neighbours` are the other
     detected parts, as for clamps_neighbour(); a yaw that would clamp one of
-    them is not used.
+    them is not used. With `best_effort`, a blocked yaw is returned rather
+    than None: the one with the fewest depth points in the fingers' way.
     """
     d, height = local_scene(cloud_mm, x, y)
-    best = None
+    best = least = None
     for deg in YAWS_DEG:
         yaw = math.radians(deg)
         if clamps_neighbour(x, y, gap_mm, yaw, neighbours, grasp_z):
@@ -158,4 +161,8 @@ def choose_grasp_yaw(cloud_mm, x, y, grasp_z, gap_mm, floor_z, neighbours=()):
         blocked, crowding = strip_report(d, height, grasp_z - floor_z, gap_mm, yaw)
         if not blocked and (best is None or crowding < best[0]):
             best = (crowding, yaw)
+        if least is None or crowding < least[0]:
+            least = (crowding, yaw)
+    if best is None and best_effort:
+        best = least
     return None if best is None else best[1]

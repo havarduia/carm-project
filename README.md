@@ -57,7 +57,7 @@ Pressing `s` starts one trial, which runs until the board is empty:
    would put a neighbouring part between or under the fingers is refused, unless that
    neighbour ends below the fingertips. If every part left has a neighbour in the way,
    the tallest is taken anyway.
-5. **Pick.** The arm moves above the part, descends straight down to 15 mm below its top
+5. **Pick.** The arm moves above the part, descends straight down to 10 mm below its top
    (never below the table limit), closes, and lifts straight up. If the gripper closes on
    nothing, it opens again and skips the trip to the bin.
 6. **Place.** The part is carried to the bin for its class and released, and the arm
@@ -211,10 +211,11 @@ Grasping, in `main/main.py`:
 | --- | --- | --- |
 | `offset_x`, `offset_y` (in `main()`) | -14, 10 mm | Trim between where the camera sees a part and where the arm has to go; see the hover check below |
 | `PICK_AREA_MM` | x 150 to 600, y -250 to 150 | Detections outside this are ignored |
-| `GRASP_DEPTH_MM` | 15 | Fingertips stop this far below the part's top |
+| `GRASP_DEPTH_MM` | 10 | Fingertips stop this far below the part's top |
 | `APPROACH_HEIGHT` | 80 mm | Height above the grasp from which the arm descends and to which it lifts |
 | `FINGER_CLEARANCE_MM` | 6 | Free space per side added to the part's width for the finger opening |
-| `GRIPPER_OPEN` | 400 (40 mm) | Largest opening, also used to release |
+| `GRIPPER_OPEN` | 400 (40 mm) | Opening at rest and for release |
+| `MAX_GRASP_OPEN` | 600 (60 mm) | Widest opening for a descent onto a part |
 | `BOX_TO_PART_WIDTH` | 0.75 | Share of the detection-box width taken as a neighbour's real width |
 | `EMPTY_GRIP_MM` | 1.0 | A gripper closed further than this holds nothing |
 | `MAX_ATTEMPTS_PER_PART` | 2 | Tries per spot before a part is left |

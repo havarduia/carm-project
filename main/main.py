@@ -10,6 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from detection_model.yolo_model import YoloSnapshotNode, read_line
 from helpers.grasp_yaw import choose_grasp_yaw
 from helpers.part_top import part_top
+from helpers.segment import segment_top
 from helpers.movement import (DEFAULT_SPEED, HOME_POSE_MM, MIN_Z_MM, TABLE_CONTACT_Z_MM,
                               TRAVEL_SPEED, MoveArm)
 from helpers.run_log import RunLog
@@ -52,14 +53,24 @@ GRIPPER_OPEN = 400
 # MIN_GRIPPER_OPEN. The slack covers the arm arriving a few mm off the part's
 # centre: 2-3 mm in the hover checks of 2026-10-11, once the trim in main()
 # was set. If no gripper angle is free at that opening, wider ones are
-# tried in steps of OPENING_STEP up to GRIPPER_OPEN.
+# tried in steps of OPENING_STEP up to GRIPPER_OPEN, or the part's own
+# opening where that is wider.
 FINGER_CLEARANCE_MM = 6.0
 MIN_GRIPPER_OPEN = 200
+# Widest opening for a descent (60 mm). Wider than GRIPPER_OPEN: at 40 mm,
+# parts over ~32 mm wide (transformers, big capacitors) blocked every yaw
+# themselves and were never tried (no_free_yaw, 2026-10-14). Only a part that
+# wide opens this far: a 14 mm capacitor widened to 60 mm to clear its
+# neighbours, closed through them and pushed them over (2026-10-26).
+MAX_GRASP_OPEN = 600
 OPENING_STEP = 50
 
 # The fingertips stop this far below a part's top face, or at the table limit
 # if that comes first.
-GRASP_DEPTH_MM = 15.0
+# 10 mm since 2026-10-26: at 15 the fingers slid far down the sides of tall
+# capacitors, into the parts packed around them. Shallower also lets them pass
+# over more of the short neighbours (see NEIGHBOUR_BELOW_MM in grasp_yaw.py).
+GRASP_DEPTH_MM = 10.0
 
 # With --hover the fingertips stop this far above the part's top face.
 HOVER_HEIGHT_MM = 10.0
@@ -128,9 +139,16 @@ def in_pick_area(targets):
     return [t for t in targets if x_min <= t[0] <= x_max and y_min <= t[1] <= y_max]
 
 
-def attempts_near(target, attempted):
-    """How many of the (x, y) spots in `attempted` are this target's spot."""
-    return sum(math.dist(target[:2], spot) < SAME_PART_RADIUS_MM for spot in attempted)
+def attempts_near(target, attempted, targets=()):
+    """How many of the (x, y) spots in `attempted` are this target's spot.
+
+    A spot counts only for the part of `targets` nearest to it: two parts
+    standing against each other are closer than SAME_PART_RADIUS_MM, and a
+    part tried twice must not use up its neighbour's tries (2026-10-26)."""
+    def mine(spot):
+        return all(math.dist(target[:2], spot) <= math.dist(t[:2], spot) for t in targets)
+    return sum(math.dist(target[:2], spot) < SAME_PART_RADIUS_MM and mine(spot)
+               for spot in attempted)
 
 
 def finger_opening(width_mm):
@@ -139,7 +157,7 @@ def finger_opening(width_mm):
     if width_mm is None:
         return GRIPPER_OPEN
     opening = round((width_mm + 2 * FINGER_CLEARANCE_MM) * 10)
-    return min(GRIPPER_OPEN, max(MIN_GRIPPER_OPEN, opening))
+    return min(MAX_GRASP_OPEN, max(MIN_GRIPPER_OPEN, opening))
 
 
 def choose_grasp(cloud_mm, x, y, z, width_mm, neighbours=()):
@@ -151,7 +169,8 @@ def choose_grasp(cloud_mm, x, y, z, width_mm, neighbours=()):
     first = finger_opening(width_mm)
     if cloud_mm is None:
         return first, 0.0
-    for opening in list(range(first, GRIPPER_OPEN, OPENING_STEP)) + [GRIPPER_OPEN]:
+    widest = max(GRIPPER_OPEN, first)
+    for opening in list(range(first, widest, OPENING_STEP)) + [widest]:
         yaw = choose_grasp_yaw(cloud_mm, x, y, z, opening / 10.0, TABLE_CONTACT_Z_MM,
                                neighbours)
         if yaw is not None:
@@ -225,7 +244,7 @@ def pick_and_place(moveto, grasp, yaw, bin_pose, opening=GRIPPER_OPEN):
         return "move_failed", "above bin", grip_width
     if not moveto.move_to(bx, by, bz, speed=TRAVEL_SPEED):
         return "move_failed", "down to bin", grip_width
-    moveto.set_gripper(GRIPPER_OPEN)
+    moveto.set_gripper(max(GRIPPER_OPEN, opening))
     if not moveto.move_to(bx, by, bz + APPROACH_HEIGHT, speed=TRAVEL_SPEED):
         return "move_failed", "lift from bin", grip_width
     return "placed", None, grip_width
@@ -282,7 +301,7 @@ def main(args=None):
     # stood about 14 mm towards the base and 4 mm towards the bins of the
     # gripper's centre (phone photos of a 13 mm part, +/- 3 mm). One spot only.
     # offset_z is only used when the top face cannot be found in the depth
-    # points (see helpers/part_top.py).
+    # points (see helpers/segment.py and helpers/part_top.py).
     offset_x = -14
     offset_y = 10
     offset_z = -10
@@ -302,11 +321,15 @@ def main(args=None):
     moveto.home()
 
     def locate(target):
-        """(target, centre of its top face or None) - see helpers/part_top.py."""
+        """(target, centre of its top face or None): from the part cut out of
+        the depth image (helpers/segment.py), else from the points around the
+        detection (helpers/part_top.py)."""
         x, y, z, _, *size = target
         if node is None or node.cloud_mm is None or not size:
             return target, None
-        return target, part_top(node.cloud_mm, (x, y, z), size[0] / 2.0, node.camera_xy_mm)
+        top = segment_top(node.grid_mm, size[1]) if len(size) > 1 else None
+        return target, top or part_top(node.cloud_mm, (x, y, z), size[0] / 2.0,
+                                       node.camera_xy_mm)
 
     def neighbours_of(xy, located_parts):
         """Every other detected part as (x, y, radius, top z), where the camera
@@ -358,7 +381,12 @@ def main(args=None):
         located = len(targets)
 
         outcomes = []
-        attempted = []  # (x, y) of every pick tried on this board
+        # (x, y) of every pick on this board that did not place its part. A
+        # placed part is gone; a part found at its spot later is another one,
+        # revealed by it, and starts with no tries.
+        # ponytail: a pick logged as placed that left its part behind is retried
+        # without limit; count placed picks too if that is ever seen.
+        attempted = []
         attempt = 0
         # A failed move can leave the gripper closed on a part.
         moveto.set_gripper(GRIPPER_OPEN)
@@ -371,7 +399,7 @@ def main(args=None):
             located_parts = [locate(t) for t in targets]
             for (x, y, z, cls, *size), top in pick_order(located_parts):
                 width_mm = size[0] if size else None
-                if attempts_near((x, y), attempted) >= MAX_ATTEMPTS_PER_PART:
+                if attempts_near((x, y), attempted, targets) >= MAX_ATTEMPTS_PER_PART:
                     continue
 
                 # Grasp at the centre of the part's top face, a fixed depth
@@ -416,7 +444,10 @@ def main(args=None):
             # the other. Leaving them helps nobody, so take the first one
             # (the tallest) regardless of its neighbours. The fingers must
             # still come down on free space as far as the depth points show.
+            # One that already came down on its neighbour goes last: taking
+            # the neighbour first frees both (2026-10-26, picks 8-10).
             if chosen is None:
+                blocked.sort(key=lambda b: attempts_near(b[0][:2], attempted, targets))
                 for part, (seen_x, seen_y) in blocked:
                     grasp = choose_grasp(None if node is None else node.cloud_mm,
                                          seen_x, seen_y, part[6], part[7])
@@ -426,6 +457,18 @@ def main(args=None):
                         chosen, (opening, yaw) = part, grasp
                         crowded = True
                         break
+            # Packed so tight that even then no fingers come down on free
+            # space (2026-10-26: six capacitors, nothing picked). Take the
+            # first one still, at its own opening, turned where the least is
+            # in the way. A blocked descent counts as a try, so this ends.
+            if chosen is None and blocked and node is not None:
+                part, (seen_x, seen_y) = blocked[0]
+                opening = finger_opening(part[7])
+                yaw = choose_grasp_yaw(node.cloud_mm, seen_x, seen_y, part[6], opening / 10.0,
+                                       TABLE_CONTACT_Z_MM, best_effort=True)
+                print("No gripper angle is free anywhere - taking the tallest part "
+                      "where the least is in the way.")
+                chosen, crowded = part, True
             blocked = [part for part, _ in blocked]
 
             started = time.time()
@@ -461,7 +504,8 @@ def main(args=None):
                         outcome, failed_step, grip_width = pick_and_place(
                             moveto, (grasp_x, grasp_y, grasp_z), yaw, bin_pose, opening)
                     descent_current = moveto.descent_current_a
-                    attempted.append((x, y))
+                    if outcome != "placed":
+                        attempted.append((x, y))
                     moveto.home()
 
                 outcomes.append(outcome)
@@ -507,7 +551,7 @@ def main(args=None):
                 last_annotated = snapshot['annotated']
                 targets = in_pick_area(snapshot['targets'])
 
-        if not cli_args.no_hardware and attempted:
+        if not cli_args.no_hardware and outcomes:
             log.save_image(f"snapshot_{snapshot_no:02d}_after.jpg", last_annotated)
 
         row = {

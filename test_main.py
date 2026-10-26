@@ -19,10 +19,11 @@ from detection_model.yolo_model import (
 )
 from helpers.grasp_yaw import choose_grasp_yaw, clamps_neighbour, closing_axis
 from helpers.part_top import part_top
+from helpers.segment import segment_top
 from helpers.movement import (BLOCKED_CURRENT_A, GUARD_SETTLE_S, HOME_POSE_MM, MIN_Z_MM,
                               TorqueGuard, downward_orientation)
 from helpers.run_log import RunLog
-from main.main import (EMPTY_GRIP_MM, GRIPPER_OPEN, MIN_GRIPPER_OPEN, MAX_ATTEMPTS_PER_PART, PICK_AREA_MM, PLACE_BINS,
+from main.main import (EMPTY_GRIP_MM, GRIPPER_OPEN, MAX_GRASP_OPEN, MIN_GRIPPER_OPEN, MAX_ATTEMPTS_PER_PART, PICK_AREA_MM, PLACE_BINS,
                        MockMoveArm, attempts_near, choose_grasp, finger_opening, in_pick_area,
                        pick_and_place, pick_order)
 
@@ -193,6 +194,11 @@ def test_grasp_yaw():
     ring = [_post(25.0 * math.cos(a), 25.0 * math.sin(a), 30.0)
             for a in np.arange(0.0, 2 * math.pi, math.pi / 8)]
     assert choose_grasp_yaw(np.vstack([floor] + ring), 0.0, 0.0, 6.0, 40.0, 0.0) is None
+    # Unless any yaw will do: then the one with least in the way. Here the
+    # ring has a post missing, so the fingers go where it was.
+    gap = [p for i, p in enumerate(ring) if i not in (4, 12)]
+    yaw = choose_grasp_yaw(np.vstack([floor] + gap), 0.0, 0.0, 6.0, 40.0, 0.0, best_effort=True)
+    assert yaw is not None and abs(abs(math.degrees(yaw)) - 0) < 1, math.degrees(yaw)
     assert choose_grasp_yaw(np.zeros((0, 3)), 0.0, 0.0, 6.0, 40.0, 0.0) is None
 
 
@@ -230,6 +236,14 @@ def test_attempts_near():
     # A re-detection of the same part lands a few mm off, and still counts.
     assert attempts_near((301.0, 51.0, 12.0, "capacitor"), tried) == 2 == MAX_ATTEMPTS_PER_PART
     assert attempts_near((350.0, 50.0, 12.0, "capacitor"), tried) == 0
+    # 2026-10-26: a big capacitor at (438, 14) was tried twice; the small one
+    # against it at (425.6, 18.3) is within 15 mm of both tries, but they were
+    # not its tries, so it must still be picked.
+    big, small = (438.0, 13.0, 32.0, "capacitor"), (425.6, 18.3, 16.0, "capacitor")
+    tried = [(438.0, 13.9), (439.8, 14.4)]
+    assert attempts_near(small, tried) == 2
+    assert attempts_near(small, tried, [big, small]) == 0
+    assert attempts_near(big, tried, [big, small]) == 2
 
 
 def test_empty_grasp():
@@ -277,7 +291,7 @@ def test_finger_opening():
     # Small parts get the minimum, huge ones the maximum, and in between the
     # opening grows with the part.
     assert finger_opening(0.0) == MIN_GRIPPER_OPEN
-    assert finger_opening(60.0) == GRIPPER_OPEN
+    assert finger_opening(60.0) == MAX_GRASP_OPEN
     assert MIN_GRIPPER_OPEN < finger_opening(10.0) < finger_opening(15.0) < GRIPPER_OPEN
 
     floor = _floor_cloud()
@@ -285,8 +299,8 @@ def test_finger_opening():
     assert choose_grasp(floor, 0.0, 0.0, 6.0, 10.0) == (finger_opening(10.0), 0.0)
     assert choose_grasp(None, 0.0, 0.0, 6.0, 10.0) == (finger_opening(10.0), 0.0)
 
-    # Ringed by posts 38 mm away, the full opening fits nowhere but a narrow one does.
-    ring = [_post(38.0 * math.cos(a), 38.0 * math.sin(a), 30.0)
+    # Ringed by posts 34 mm away, the full opening fits nowhere but a narrow one does.
+    ring = [_post(34.0 * math.cos(a), 34.0 * math.sin(a), 30.0)
             for a in np.arange(0.0, 2 * math.pi, math.pi / 8)]
     cloud = np.vstack([floor] + ring)
     assert choose_grasp_yaw(cloud, 0.0, 0.0, 6.0, GRIPPER_OPEN / 10.0, 0.0) is None
@@ -315,6 +329,19 @@ def test_finger_opening():
     opening, _ = choose_grasp(wide, 0.0, 0.0, 6.0, 8.0)
     assert opening > finger_opening(8.0), opening
 
+    # A 40 mm wide part fills the strips of a 40 mm opening itself, at every
+    # yaw; it is taken with the fingers open wider (no_free_yaw, 2026-10-14).
+    block = np.vstack([floor] + [_post(dx, dy, 30.0) for dx in (-15.0, -5.0, 5.0, 15.0)
+                                 for dy in (-15.0, -5.0, 5.0, 15.0)])
+    assert choose_grasp_yaw(block, 0.0, 0.0, 6.0, GRIPPER_OPEN / 10.0, 0.0) is None
+    grasp = choose_grasp(block, 0.0, 0.0, 6.0, 40.0)
+    assert grasp is not None and GRIPPER_OPEN < grasp[0] <= MAX_GRASP_OPEN, grasp
+
+    # A small part in the middle of that block is not opened past
+    # GRIPPER_OPEN to clear it: fingers that wide close through the
+    # neighbours (2026-10-26).
+    assert choose_grasp(block, 0.0, 0.0, 6.0, 10.0) is None
+
 
 def test_part_top():
     # A 20 mm wide, 30 mm tall block centred on (300, 0), seen by a camera
@@ -336,9 +363,43 @@ def test_part_top():
     x, y, z = part_top(np.vstack([cloud, behind]), (290.0, 0.0, 20.0), 10.0, (0.0, 0.0))
     assert abs(x - 300.0) < 2.0 and abs(z - 30.0) < 0.5, (x, y, z)
 
+    # A thin part packed against a taller one (2026-10-26): the neighbour's
+    # rim falls inside the search and is higher, so the search walks onto it.
+    # That is not this part's top.
+    # The box reads it 15 mm wide; it is 11.
+    xs, ys = np.meshgrid(np.arange(290.0, 301.0), np.arange(-5.5, 5.5))
+    thin = np.stack([xs.ravel(), ys.ravel(), np.full(xs.size, 18.0)], axis=1)
+    xs, ys = np.meshgrid(np.arange(301.0, 327.0), np.arange(-13.0, 13.0))
+    big = np.stack([xs.ravel(), ys.ravel(), np.full(xs.size, 40.0)], axis=1)
+    floor = _floor_cloud() + (300.0, 0.0, 0.0)
+    x, y, z = part_top(np.vstack([floor, thin]), (290.0, 0.0, 12.0), 7.5, (0.0, 0.0))
+    assert abs(x - 295.5) < 1.5 and abs(z - 18.0) < 0.5, (x, y, z)
+    assert part_top(np.vstack([floor, thin, big]), (290.0, 0.0, 12.0), 7.5, (0.0, 0.0)) is None
+
     # No depth over the part: nothing to go on.
     assert part_top(np.zeros((0, 3)), (290.0, 0.0, 20.0), 10.0, (0.0, 0.0)) is None
     assert part_top(_floor_cloud(), (290.0, 0.0, 20.0), 10.0, (0.0, 0.0)) is None
+
+
+def test_segment_top():
+    # Seen from straight above at 0.5 mm per pixel, about what the camera
+    # gets at the board: pixel (u, v) is at x = u / 2, y = v / 2. A thin part,
+    # 11 mm wide and 18 tall, stands against a 26 mm wide one 40 tall, as on
+    # 2026-10-26; the board is at z = 2.
+    grid = np.zeros((240, 240, 3), dtype=np.float32)
+    grid[..., 1], grid[..., 0] = np.indices((240, 240)) / 2.0
+    grid[..., 2] = 2.0
+    grid[90:112, 80:102, 2] = 18.0
+    grid[76:128, 102:154, 2] = 40.0
+    # Its box reaches well into the big one, as boxes in a packed group do.
+    x, y, z = segment_top(grid, (72, 82, 120, 120))
+    assert abs(x - 45.25) < 1.0 and abs(y - 50.25) < 1.0 and abs(z - 18.0) < 0.5, (x, y, z)
+    # The big one cut out of its own box, with the thin one in it.
+    x, y, z = segment_top(grid, (72, 68, 160, 136))
+    assert abs(x - 64.25) < 1.0 and abs(y - 51.25) < 1.0 and abs(z - 40.0) < 0.5, (x, y, z)
+    # No depth readings, or nothing standing in the box: no part.
+    assert segment_top(np.full_like(grid, np.nan), (72, 82, 120, 120)) is None
+    assert segment_top(grid, (180, 180, 230, 230)) is None
 
 
 def test_run_log():
@@ -372,5 +433,6 @@ if __name__ == "__main__":
     test_empty_grasp()
     test_finger_opening()
     test_part_top()
+    test_segment_top()
     test_run_log()
     print("ok")
