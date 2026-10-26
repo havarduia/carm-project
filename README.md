@@ -7,24 +7,47 @@ looked at again, so each grasp is planned from a fresh image.
 
 ## Results
 
-Five trials on 2026-10-11, ten loose capacitors on the board in each.
+Five trials on 2026-10-26 (code at commit `8362748`), all on the orange half of the board.
+Each trial had ten loose parts, some packed against each other: four capacitors, four
+resistors and two coils.
+
+| Parts in the right bin | Placed |
+| --- | --- |
+| Capacitors | 17 of 20 |
+| Coils | 9 of 10 |
+| Resistors | 0 of 20 |
+| All | 26 of 50 (52 %) |
 
 | | |
 | --- | --- |
-| Parts picked and binned | 50 of 50 |
-| Retries, empty grasps, blocked descents, parts left on the board | 0 |
-| Time per pick | 12.4 s mean (11.8 to 13.9 s) |
-| Time to clear a board of ten | 125 to 130 s |
-| Detections in the first image of each trial | 10, 10, 11, 12, 10 (three double boxes, one labelled transformer; all filtered out before picking) |
+| Picks attempted | 28: 26 placed, all on the first try, and 2 empty grasps |
+| Blocked descents, failed moves, wrong bins | 0 |
+| Time per pick | 12.1 s mean (10.7 to 12.8 s) |
+| Time to clear a board | 35 to 81 s |
+| Neighbouring parts knocked or moved | 3 |
 
-![KPIs of the five trials](results/five_trials_2026-10-11/plots/01_kpi_trials.png)
+![KPIs of the five trials](results/five_trials_2026-10-26/kpi.png)
 
-![Where the time of one pick goes](results/five_trials_2026-10-11/plots/02_time_per_phase.png)
+![Where the parts were in the five trials, and which were missed](results/five_trials_2026-10-26/part_positions.png)
 
-All 50 parts were capacitors, so these trials do not test sorting into different bins.
+![Parts on the board, detected, attempted and placed, by type](results/five_trials_2026-10-26/funnel.png)
 
-The full record is in [`results/five_trials_2026-10-11/`](results/five_trials_2026-10-11/README.md):
-the raw logs, the terminal output, the snapshot images, derived tables and eleven plots.
+![The detector's best score on each part](results/five_trials_2026-10-26/confidence.png)
+
+![Part width measured by the gripper](results/five_trials_2026-10-26/grip_width.png)
+
+![Largest current change during each descent](results/five_trials_2026-10-26/descent_current.png)
+
+The main limitation is detection. The model found none of the 20 resistors: replayed
+from the rosbag with no confidence cut-off, it never scored a resistor box on one at all,
+so lowering the threshold would not help. They lie flat, are small in the image, and one
+was nearly the same colour as the markings printed on the board. The training data has few
+resistors: only 8 are in the test split below. In trial 2 it also missed a capacitor (best
+score 0.47, just under the 0.5 threshold) and a coil (0.14), and a fourth capacitor stood
+out of the camera's view for the whole trial. The two empty grasps were both in trial 4, on
+a capacitor knocked over by an earlier pick; it stayed on the board.
+
+The full record is in [`results/five_trials_2026-10-26/`](results/five_trials_2026-10-26/README.md).
 
 The detector is `yolo26s_v9_1280`, a YOLO26s fine-tuned on our own photos plus a public
 PCB dataset. On its test split (15 photos, 290 labelled objects) it scores:

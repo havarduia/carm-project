@@ -1,0 +1,50 @@
+trial,part,outcome,x_mm,y_mm,u,v,best_own_class,best_any_class,any_class
+1,capacitor,placed,419.6,-54.4,1380,388,0.925,0.925,capacitor
+1,capacitor,placed,329.5,18.5,1013,496,0.928,0.928,capacitor
+1,capacitor,placed,437.7,-30.3,1322,364,0.925,0.925,capacitor
+1,coil,placed,443.9,20.0,1188,343,0.918,0.918,coil
+1,coil,placed,477.4,48.8,1167,258,0.795,0.795,coil
+1,capacitor,placed,368.3,50.8,995,434,0.873,0.873,capacitor
+2,capacitor,placed,430.5,-10.0,1269,303,0.932,0.932,capacitor
+2,capacitor,placed,376.0,-9.1,1169,456,0.891,0.891,capacitor
+2,coil,placed,479.0,69.9,1120,242,0.882,0.882,coil
+3,capacitor,placed,371.0,-12.4,1180,424,0.879,0.879,capacitor
+3,capacitor,placed,366.2,57.7,977,372,0.903,0.903,capacitor
+3,capacitor,placed,392.0,-50.2,1312,479,0.924,0.924,capacitor
+3,capacitor,placed,451.5,60.6,1104,280,0.848,0.848,capacitor
+3,coil,placed,483.4,21.8,1238,278,0.854,0.854,coil
+3,coil,placed,398.6,40.6,1070,394,0.888,0.888,coil
+4,capacitor,placed,402.0,79.6,988,245,0.922,0.922,capacitor
+4,capacitor,placed,375.1,27.3,1066,441,0.89,0.89,capacitor
+4,coil,placed,430.8,-43.7,1334,440,0.805,0.805,coil
+4,coil,placed,480.5,65.9,1131,241,0.721,0.721,coil
+4,capacitor,placed,472.6,22.4,1235,232,0.919,0.919,capacitor
+4,capacitor,empty_grasp,577.6,-75.6,1590,233,0.945,0.945,capacitor
+5,capacitor,placed,356.5,-15.5,1164,457,0.932,0.932,capacitor
+5,capacitor,placed,385.3,-1.8,1157,463,0.932,0.932,capacitor
+5,capacitor,placed,448.8,-17.0,1301,330,0.932,0.932,capacitor
+5,capacitor,placed,468.0,-8.4,1308,276,0.94,0.94,capacitor
+5,coil,placed,480.4,70.2,1122,233,0.788,0.788,coil
+5,coil,placed,476.4,40.1,1184,277,0.853,0.853,coil
+1,resistor,not detected,507.9,91.1,1110,208,0.0,0.0,
+1,resistor,not detected,498.7,-2.3,1306,314,0.0,0.0,
+1,resistor,not detected,380.2,76.2,955,404,0.0,0.0,
+1,resistor,not detected,346.2,-36.5,1182,622,0.0,0.238,capacitor
+2,resistor,not detected,455.8,46.2,1138,323,0.0,0.0,
+2,resistor,not detected,358.9,19.1,1056,515,0.0,0.0,
+2,resistor,not detected,337.8,-34.2,1162,636,0.0,0.013,capacitor
+2,resistor,hidden,497.6,-4.5,1310,318,0.0,0.0,
+3,resistor,not detected,455.8,46.2,1138,323,0.0,0.0,
+3,resistor,not detected,500.6,-3.8,1312,313,0.0,0.0,
+3,resistor,not detected,358.9,19.1,1056,515,0.0,0.0,
+3,resistor,not detected,337.3,-33.4,1159,636,0.0,0.042,capacitor
+4,resistor,not detected,499.4,-2.3,1307,313,0.0,0.0,
+4,resistor,not detected,432.4,21.0,1164,387,0.0,0.0,
+4,resistor,not detected,358.9,19.1,1056,515,0.0,0.0,
+4,resistor,not detected,337.3,-33.4,1159,636,0.0,0.001,capacitor
+5,resistor,not detected,432.4,21.0,1164,387,0.0,0.0,
+5,resistor,not detected,358.9,19.1,1056,515,0.0,0.0,
+5,resistor,not detected,336.3,-34.0,1159,639,0.0,0.0,
+5,resistor,not detected,447.2,95.0,1018,283,0.0,0.0,
+2,capacitor,not detected,323.9,71.7,866,507,0.474,0.474,capacitor
+2,coil,not detected,431.0,-48.4,1337,476,0.137,0.335,capacitor

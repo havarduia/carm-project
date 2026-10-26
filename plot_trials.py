@@ -56,6 +56,10 @@ def main():
     names = [f"Trial {t['snapshot']}" for t in trials]
 
     located = [number(t, "located") for t in trials]
+    # The operator's count per type, where the run asked for it; else the parts
+    # that got a position in the first image.
+    counts = [[t[k] for k in t if k.startswith("on_board_") and t[k]] for t in trials]
+    on_board = [sum(map(int, c)) if c else n for c, n in zip(counts, located)]
     # Without the operator's answers a placed part is the best that is known.
     success = [number(t, "successes") if t["successes"] else number(t, "placed") for t in trials]
     detected = [number(t, "detected") for t in trials]
@@ -66,11 +70,11 @@ def main():
     fig, (ax_ok, ax_time, ax_det) = plt.subplots(1, 3, sharey=True, figsize=(7.2, 2.7), dpi=300)
 
     # Parts picked successfully, against the parts that were on the board.
-    ax_ok.barh(rows, located, height=0.62, color=LIGHT, zorder=2)
+    ax_ok.barh(rows, on_board, height=0.62, color=LIGHT, zorder=2)
     ax_ok.barh(rows, success, height=0.62, color=BAR, zorder=3)
-    for row, (ok, n) in enumerate(zip(success, located)):
+    for row, (ok, n) in enumerate(zip(success, on_board)):
         ax_ok.text(n + 0.3, row, f"{ok} / {n}", va="center", ha="left", color=INK)
-    ax_ok.set_xlim(0, max(located) * 1.3)
+    ax_ok.set_xlim(0, max(on_board) * 1.3)
     style(ax_ok, "Parts picked and binned")
 
     # One dot per pick; the tick is the trial's mean.
@@ -102,8 +106,8 @@ def main():
     total = lambda key: sum(number(t, key) for t in trials)
     mean_s = f"{sum(all_seconds) / len(all_seconds):.1f} s" if all_seconds else "n/a"
     footer = (
-        f"{len(trials)} trials, {sum(located)} parts: {sum(success)} picked and binned "
-        f"({100 * sum(success) / max(sum(located), 1):.0f} %), mean {mean_s} per pick. "
+        f"{len(trials)} trials, {sum(on_board)} parts: {sum(success)} picked and binned "
+        f"({100 * sum(success) / max(sum(on_board), 1):.0f} %), mean {mean_s} per pick. "
         f"Missed by camera {total('missed_by_camera')}, empty grasps {total('empty_grasp')}, "
         f"blocked descents {total('blocked_descent')}, left on board {total('remaining')}, "
         f"neighbours knocked {total('knocked_over')}.\n"

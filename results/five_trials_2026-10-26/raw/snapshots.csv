@@ -1,0 +1,6 @@
+time,snapshot,target_class,detected,located,attempted,placed,empty_grasp,blocked_descent,no_free_yaw,move_failed,remaining,on_board_capacitor,on_board_resistor,on_board_transformer,missed_by_camera,false_detections,grasp_failures,wrong_bin,knocked_over,successes,note
+18:25:43,1,all,5,5,6,6,0,0,0,0,0,4,4,2,4,0,0,0,1,6,one resistor got touched.
+18:27:58,2,all,3,3,3,3,0,0,0,0,0,4,4,2,7,0,0,0,0,3,"Two capacitors, one coil and 4 resistors not picked up."
+18:30:41,3,all,5,5,6,6,0,0,0,0,0,4,4,2,4,0,0,0,0,6,4 resistors not detected.
+18:33:00,4,all,4,4,7,5,2,0,0,0,1,4,4,2,4,0,0,0,2,5,"one resistor and capacitor was knocked over. one was a fail grasp causing it to fall over. it was detected fallen over twice, but both regrasp failed leaving it fallen over."
+18:35:49,5,all,3,3,6,6,0,0,0,0,0,4,4,2,4,0,0,0,0,6,4 resistors not detected.
